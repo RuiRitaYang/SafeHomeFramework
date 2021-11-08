@@ -96,3 +96,8 @@ fabric.properties
 .idea/sonarlint
 
 # End of https://www.gitignore.io/api/intellij
+
+# Added by Rui
+.idea/jarRepositories.xml
+.idea/runConfigurations.xml
+

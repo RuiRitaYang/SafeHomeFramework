@@ -19,9 +19,6 @@
 
 package SafeHomeSimulator;
 
-import java.util.HashSet;
-import java.util.Set;
-
 
 public class Command
 {
@@ -30,6 +27,7 @@ public class Command
     public boolean isMust;
     public int startTime;
     public double mustPercent;
+    public DEV_STATE targetStatus;
 
     public Command(DEV_ID _devID, int _duration, boolean _isMust, double _mustPercent)
     {
@@ -37,7 +35,18 @@ public class Command
         this.duration = _duration;
         this.isMust = _isMust;
         this.mustPercent = _mustPercent;
+        this.targetStatus = DEV_STATE.CLOSED;
     }
+
+    public Command(DEV_ID _devID, DEV_STATE _dev_state, int _duration, boolean _isMust, double _mustPercent)
+    {
+        this.devID = _devID;
+        this.duration = _duration;
+        this.isMust = _isMust;
+        this.mustPercent = _mustPercent;
+        this.targetStatus = _dev_state;
+    }
+
 
     public int getCmdEndTime()
     {

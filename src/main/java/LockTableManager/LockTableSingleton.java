@@ -19,7 +19,6 @@
 
 package LockTableManager;
 
-import ConcurrencyController.ConcurrencyControllerSingleton;
 import RegistrationPkg.LockTableBluePrint;
 import RegistrationPkg.RegistrationFactory;
 import RegistrationPkg.RegistrationManager;
@@ -29,7 +28,6 @@ import Utility.*;
 
 import java.util.*;
 import java.util.concurrent.*;
-import java.util.concurrent.locks.Lock;
 
 
 public class LockTableSingleton
@@ -142,7 +140,7 @@ public class LockTableSingleton
         this.scheduleCheckForAvailableLockAndNotify();
     }
     ////////////////////////////////////////////////////////////////////
-    public void commandFinishes(int routineID, Command finishedCmd)
+    public void commandFinishes(int routineID, OldCommand finishedCmd)
     {
 
         System.out.println("\t|||||| Command Finish : [Routine ID : " +  routineID + " | " + finishedCmd );

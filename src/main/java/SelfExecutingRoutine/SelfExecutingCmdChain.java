@@ -17,9 +17,8 @@
 
 package SelfExecutingRoutine;
 
-import ConcurrencyController.ConcurrencyControllerSingleton;
 import LockTableManager.LockTableSingleton;
-import Utility.Command;
+import Utility.OldCommand;
 import Utility.DEV_ID;
 import Utility.DEV_LOCK;
 
@@ -33,7 +32,7 @@ public class SelfExecutingCmdChain implements Runnable
 {
     private Thread thread;
     private boolean isDisposed;
-    public List<Command> commandChain;
+    public List<OldCommand> commandChain;
     public Set<DEV_ID> devicesSet;
     public int cmdChainIndx;
     private SelfExecutingRoutine parentRtn;
@@ -46,7 +45,7 @@ public class SelfExecutingCmdChain implements Runnable
     private static String TAGclassName;
 
     ///////////////////////////////////////////////////////////////////////////
-    public SelfExecutingCmdChain(SelfExecutingRoutine _parentRtn, int _cmdChainID, List<Command> _commandChain)
+    public SelfExecutingCmdChain(SelfExecutingRoutine _parentRtn, int _cmdChainID, List<OldCommand> _commandChain)
     {
         this.parentRtn = _parentRtn;
         this.cmdChainIndx = _cmdChainID;
@@ -63,7 +62,7 @@ public class SelfExecutingCmdChain implements Runnable
         SelfExecutingCmdChain.TAGstart = "@@@";
         SelfExecutingCmdChain.TAGclassName = this.getClass().getSimpleName();
 
-        for(Command cmd : this.commandChain)
+        for(OldCommand cmd : this.commandChain)
         {
             if(cmd.devID == DEV_ID.DUMMY_WAIT)
                 continue;
@@ -103,7 +102,7 @@ public class SelfExecutingCmdChain implements Runnable
 
         for( int currentCommandIdx = 0; !this.isDisposed && (currentCommandIdx < this.commandChain.size()) ; currentCommandIdx++)
         {
-            Command currentCommand = commandChain.get(currentCommandIdx);
+            OldCommand currentCommand = commandChain.get(currentCommandIdx);
             this.currentDevice = currentCommand.devID;
 
             System.out.println(this.TAGaddThrdTime(TAG)
@@ -215,7 +214,7 @@ public class SelfExecutingCmdChain implements Runnable
 
     }
     ///////////////////////////////////////////////////////////////////////////
-    public void executeCommand(Command cmd)
+    public void executeCommand(OldCommand cmd)
     {
         final String functionName = "." + new Throwable().getStackTrace()[0].getMethodName() + "()";
         final String TAG  =  this.TAGstart + " - "+ this.TAGclassName + functionName;

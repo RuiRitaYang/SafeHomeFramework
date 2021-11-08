@@ -17,9 +17,8 @@
 
 package SelfExecutingRoutine;
 
-import ConcurrencyController.ConcurrencyControllerSingleton;
 import LockTableManager.LockTableSingleton;
-import Utility.Command;
+import Utility.OldCommand;
 import Utility.DEV_ID;
 import Utility.DEV_LOCK;
 import Utility.DEV_STATUS;
@@ -90,7 +89,7 @@ public class SelfExecutingRoutine
         this.routineID = _routineID;
     }
     ///////////////////////////////////////////////////////////////////////////
-    public void addCmdChain(List<Command> _commandList)
+    public void addCmdChain(List<OldCommand> _commandList)
     {
         assert(!this.isStarted);
 
@@ -141,7 +140,7 @@ public class SelfExecutingRoutine
         }
     }
     ///////////////////////////////////////////////////////////////////////////
-    public void reportCommandCompletion(Command _completedCommand, boolean _isDevUsedInFuture, boolean _wasTheLastCommand)
+    public void reportCommandCompletion(OldCommand _completedCommand, boolean _isDevUsedInFuture, boolean _wasTheLastCommand)
     {
         final String functionName = "." + new Throwable().getStackTrace()[0].getMethodName() + "()";
         final String TAG  =  this.TAGstart + " - "+ this.TAGclassName + functionName;

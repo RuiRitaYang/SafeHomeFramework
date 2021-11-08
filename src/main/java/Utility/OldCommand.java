@@ -23,13 +23,13 @@ package Utility;
 import static Utility.DEV_ID.DUMMY_WAIT;
 
 
-public class Command
+public class OldCommand
 {
     public DEV_ID devID;
     public DEV_STATUS desiredStatus;
     public int durationMilliSec; // 0 means short command.
 
-    public Command(DEV_ID _devID, DEV_STATUS _desiredStatus, int _durationMilliSec)
+    public OldCommand(DEV_ID _devID, DEV_STATUS _desiredStatus, int _durationMilliSec)
     {
         this.devID = _devID;
         this.desiredStatus = _desiredStatus;

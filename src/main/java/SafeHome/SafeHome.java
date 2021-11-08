@@ -17,10 +17,9 @@
 
 package SafeHome;
 
-import ConcurrencyController.ConcurrencyControllerSingleton;
 import LockTableManager.LockTableSingleton;
 import SelfExecutingRoutine.SelfExecutingRoutine;
-import Utility.Command;
+import Utility.OldCommand;
 import Utility.DEV_ID;
 import Utility.DEV_STATUS;
 
@@ -67,14 +66,14 @@ public class SafeHome
 
     public static SelfExecutingRoutine getRoutine1()
     {
-        List<Command> cmdChain1 = new ArrayList<>();
+        List<OldCommand> cmdChain1 = new ArrayList<>();
 
-        cmdChain1.add(new Command(DEV_ID.FAN, DEV_STATUS.ON, 0));
-        cmdChain1.add(new Command(DEV_ID.DUMMY_WAIT, DEV_STATUS.WAIT, 5000));
-        cmdChain1.add(new Command(DEV_ID.FAN, DEV_STATUS.ON, 0));
-        cmdChain1.add(new Command(DEV_ID.LIGHT, DEV_STATUS.ON, 0));
-        cmdChain1.add(new Command(DEV_ID.DUMMY_WAIT, DEV_STATUS.WAIT, 5000));
-        cmdChain1.add(new Command(DEV_ID.LIGHT, DEV_STATUS.OFF, 0));
+        cmdChain1.add(new OldCommand(DEV_ID.FAN, DEV_STATUS.ON, 0));
+        cmdChain1.add(new OldCommand(DEV_ID.DUMMY_WAIT, DEV_STATUS.WAIT, 5000));
+        cmdChain1.add(new OldCommand(DEV_ID.FAN, DEV_STATUS.ON, 0));
+        cmdChain1.add(new OldCommand(DEV_ID.LIGHT, DEV_STATUS.ON, 0));
+        cmdChain1.add(new OldCommand(DEV_ID.DUMMY_WAIT, DEV_STATUS.WAIT, 5000));
+        cmdChain1.add(new OldCommand(DEV_ID.LIGHT, DEV_STATUS.OFF, 0));
 
         SelfExecutingRoutine selfExcRtn1 = new SelfExecutingRoutine();
         selfExcRtn1.addCmdChain(cmdChain1);
@@ -84,12 +83,12 @@ public class SafeHome
 
     public static SelfExecutingRoutine getRoutine2()
     {
-        List<Command> cmdChain2 = new ArrayList<>();
+        List<OldCommand> cmdChain2 = new ArrayList<>();
 
-        cmdChain2.add(new Command(DEV_ID.FAN, DEV_STATUS.ON, 0));
-        cmdChain2.add(new Command(DEV_ID.DUMMY_WAIT, DEV_STATUS.WAIT, 5000));
-        cmdChain2.add(new Command(DEV_ID.LIGHT, DEV_STATUS.ON, 0));
-        cmdChain2.add(new Command(DEV_ID.FAN, DEV_STATUS.OFF, 0));
+        cmdChain2.add(new OldCommand(DEV_ID.FAN, DEV_STATUS.ON, 0));
+        cmdChain2.add(new OldCommand(DEV_ID.DUMMY_WAIT, DEV_STATUS.WAIT, 5000));
+        cmdChain2.add(new OldCommand(DEV_ID.LIGHT, DEV_STATUS.ON, 0));
+        cmdChain2.add(new OldCommand(DEV_ID.FAN, DEV_STATUS.OFF, 0));
         //cmdChain2.add(new Command(DEV_ID.LIGHT, DEV_STATUS.OFF, 0));
 
         SelfExecutingRoutine selfExcRtn2 = new SelfExecutingRoutine();
