@@ -38,6 +38,7 @@ public class SysParamSngltn
     private final String KEY_MAX_CMD_CNT_PER_RTN = "maxCmdCntPerRtn";
     private final String KEY_ZIPF = "zipF";
     private final String KEY_DEV_REGISTERED_OUT_OF_65_DEV = "devRegisteredOutOf65Dev";
+    private final String KEY_DEV_STATE_NUMBER = "devStateNumber";
     private final String KEY_MAX_CONCURRENT_RTN = "maxConcurrentRtn";
     private final String KEY_LONG_RTN_PRCNTG = "longRrtnPcntg";
     private final String KEY_IS_ATLEAST_ONE_LONGRUNNING = "isAtleastOneLongRunning";
@@ -111,6 +112,7 @@ public class SysParamSngltn
 
     public static double zipF;// = 0.01;
     public static int devRegisteredOutOf65Dev;//
+    public static int devStateNumber; // = 2
 
     public static int maxConcurrentRtn;// = 100; //in current version totalConcurrentRtn = maxConcurrentRtn;
 
@@ -280,6 +282,7 @@ public class SysParamSngltn
 
             zipF = Double.valueOf(properties.getProperty(KEY_ZIPF));
             devRegisteredOutOf65Dev = Integer.valueOf(properties.getProperty(KEY_DEV_REGISTERED_OUT_OF_65_DEV));
+            devStateNumber = Integer.valueOf(properties.getProperty(KEY_DEV_STATE_NUMBER));
             maxConcurrentRtn = Integer.valueOf(properties.getProperty(KEY_MAX_CONCURRENT_RTN));
 
             longRrtnPcntg = Double.valueOf(properties.getProperty(KEY_LONG_RTN_PRCNTG));

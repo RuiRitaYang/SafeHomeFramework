@@ -58,6 +58,7 @@ public class SafeHomeSimulator
 
     private static double zipF = SysParamSngltn.getInstance().zipF; //  0.01;
     public static int devRegisteredOutOf65Dev = SysParamSngltn.getInstance().devRegisteredOutOf65Dev;
+    private static int devStateNumber = SysParamSngltn.getInstance().devStateNumber;
     private static int maxConcurrentRtn = SysParamSngltn.getInstance().maxConcurrentRtn; //  100; //in current version totalConcurrentRtn = maxConcurrentRtn;
 
     private static double longRrtnPcntg = SysParamSngltn.getInstance().longRrtnPcntg; //  0.1;
@@ -112,11 +113,11 @@ public class SafeHomeSimulator
 
         count = Math.min(count, totalAvailable);
 
-        for(DEV_ID devID : DEV_ID.values()) {
+        for (DEV_ID devID : DEV_ID.values()) {
             count--;
             devIDlist.add(devID);
 
-            if(count <= 0)
+            if (count <= 0)
                 break;
         }
     }
@@ -234,23 +235,22 @@ public class SafeHomeSimulator
         return logStr;
     }
 
-    public static void main (String[] args) throws Exception
-    {
-        if(!IS_RUNNING_BENCHMARK) { initiateSyntheticDevices(); }
+    public static void main (String[] args) throws Exception {
+        if (!IS_RUNNING_BENCHMARK) { initiateSyntheticDevices(); }
 
         //////////////////////////////////////////////////////////////////////////////////
         /////////////////////////////---CHECKING-DIRECTORY-///////////////////////////////
 
         File dataStorageDir = new File(dataStorageDirectory);
 
-        if(SysParamSngltn.isGenerateSeparateOutputDir) { // original approach
-            if(!dataStorageDir.exists()) {
+        if (SysParamSngltn.isGenerateSeparateOutputDir) { // original approach
+            if (!dataStorageDir.exists()) {
                 System.out.println("\n ERROR: directory not found: " + dataStorageDirectory);
                 System.exit(1);
             }
         }
         else {  //Rui's version
-            if(!dataStorageDir.exists()) {
+            if (!dataStorageDir.exists()) {
                 dataStorageDir.mkdirs();
                 System.out.println("\n Creating directory for: " + dataStorageDirectory);
             }
@@ -272,9 +272,9 @@ public class SafeHomeSimulator
 
         boolean isBenchmarkingDoneForSinglePass = false;
         String changingParameterName = null;
-        for(int varIdx = 0; varIdx < variableList.size() || IS_RUNNING_BENCHMARK; varIdx++) {
-            if(IS_RUNNING_BENCHMARK && isBenchmarkingDoneForSinglePass) { break; }
-            if(IS_RUNNING_BENCHMARK) {
+        for (int varIdx = 0; varIdx < variableList.size() || IS_RUNNING_BENCHMARK; varIdx++) {
+            if (IS_RUNNING_BENCHMARK && isBenchmarkingDoneForSinglePass) { break; }
+            if (IS_RUNNING_BENCHMARK) {
                 variableList = new ArrayList<>();
                 variableList.add(-123.0);
 
@@ -285,7 +285,7 @@ public class SafeHomeSimulator
                 changingParameterValue = variableList.get(varIdx);
                 changingParameterName = setChangingParameterName(varIdx);
 
-                if(lastGeneratedZipfeanFor != zipF) {
+                if (lastGeneratedZipfeanFor != zipF) {
                     lastGeneratedZipfeanFor = zipF;
                     String zipFianStr = prepareZipfian();
                     System.out.println(zipFianStr);
@@ -300,8 +300,8 @@ public class SafeHomeSimulator
 
             for (int I = 0 ; I < totalSampleCount ; I++) {
                 // Report progress
-                if(I == totalSampleCount - 1 || totalSampleCount % stepSize == 0) {
-                    if(IS_RUNNING_BENCHMARK)
+                if (I == totalSampleCount - 1 || totalSampleCount % stepSize == 0) {
+                    if (IS_RUNNING_BENCHMARK)
                         System.out.println("currently Running BENCHMARK...... Progress = " + (int) (100.0 * (I + 1) / totalSampleCount) + "%");
                     else
                         System.out.println("currently Running for, " + changingParameterName + " = " +  changingParameterValue  + " Progress = " + (int) (100.0 * (I + 1) / totalSampleCount) + "%");
@@ -312,22 +312,22 @@ public class SafeHomeSimulator
 
             logStr += "\n=========================================================================\n";
 
-            if(!globalDataCollector.containsKey(changingParameterValue))
+            if (!globalDataCollector.containsKey(changingParameterValue))
                 globalDataCollector.put(changingParameterValue, new LinkedHashMap<>());
 
-            for(MEASUREMENT_TYPE measurementType : measurementList) {
-                if(!globalDataCollector.get(changingParameterValue).containsKey(measurementType))
+            for (MEASUREMENT_TYPE measurementType : measurementList) {
+                if (!globalDataCollector.get(changingParameterValue).containsKey(measurementType))
                     globalDataCollector.get(changingParameterValue).put(measurementType, new LinkedHashMap<>());
 
-                if(measurementType == MEASUREMENT_TYPE.STRETCH_RATIO ) {
-                    if(SafeHomeSimulator.CONSISTENCY_ORDERING_LIST.contains(CONSISTENCY_TYPE.EVENTUAL)) {
+                if (measurementType == MEASUREMENT_TYPE.STRETCH_RATIO ) {
+                    if (SafeHomeSimulator.CONSISTENCY_ORDERING_LIST.contains(CONSISTENCY_TYPE.EVENTUAL)) {
                         double avg = measurementCollector.finalizePrepareStatsAndGetAvg(changingParameterValue, CONSISTENCY_TYPE.EVENTUAL, measurementType);
                         avg = (double)((int)(avg * 1000.0))/1000.0;
                         globalDataCollector.get(changingParameterValue).get(measurementType).put(CONSISTENCY_TYPE.EVENTUAL, avg);
                     }
                 }
-                else if(measurementType == MEASUREMENT_TYPE.COMPARE_WV_VS_GSV_END_STATE) {
-                    if(SafeHomeSimulator.CONSISTENCY_ORDERING_LIST.contains(CONSISTENCY_TYPE.STRONG) && SafeHomeSimulator.CONSISTENCY_ORDERING_LIST.contains(CONSISTENCY_TYPE.WEAK)) {
+                else if (measurementType == MEASUREMENT_TYPE.COMPARE_WV_VS_GSV_END_STATE) {
+                    if (SafeHomeSimulator.CONSISTENCY_ORDERING_LIST.contains(CONSISTENCY_TYPE.STRONG) && SafeHomeSimulator.CONSISTENCY_ORDERING_LIST.contains(CONSISTENCY_TYPE.WEAK)) {
                         double avg = measurementCollector.finalizePrepareStatsAndGetAvg(changingParameterValue, CONSISTENCY_TYPE.WEAK, measurementType);
                         avg = (double)((int)(avg * 1000.0))/1000.0;
                         globalDataCollector.get(changingParameterValue).get(measurementType).put(CONSISTENCY_TYPE.WEAK, avg);
@@ -335,7 +335,7 @@ public class SafeHomeSimulator
                 }
                 else
                 {
-                    for(CONSISTENCY_TYPE consistency_type :  SafeHomeSimulator.CONSISTENCY_ORDERING_LIST) {
+                    for (CONSISTENCY_TYPE consistency_type :  SafeHomeSimulator.CONSISTENCY_ORDERING_LIST) {
                         double avg = measurementCollector.finalizePrepareStatsAndGetAvg(changingParameterValue, consistency_type, measurementType);
                         avg = (double)((int)(avg * 1000.0))/1000.0;
                         globalDataCollector.get(changingParameterValue).get(measurementType).put(consistency_type, avg);
@@ -353,7 +353,7 @@ public class SafeHomeSimulator
         logStr += globalResult;
 
         ////////////////////-CREATING-SUBDIRECTORY-/////////////////////////////
-        if(changingParameterName == null) {
+        if (changingParameterName == null) {
             System.out.println("\n\n ERROR: changingParameterName was not initialized! something is wrong. Terminating...\n\n");
             System.exit(1);
         }
@@ -361,7 +361,7 @@ public class SafeHomeSimulator
 
         String parentDirPath = "";
 
-        if(SysParamSngltn.isGenerateSeparateOutputDir) { // original approach
+        if (SysParamSngltn.isGenerateSeparateOutputDir) { // original approach
             String epoch = System.currentTimeMillis() + "";
             parentDirPath = dataStorageDirectory + File.separator + epoch + "_VARY_"+ changingParameterName;
             parentDirPath += "_R_" + maxConcurrentRtn + "_C_" + minCmdCntPerRtn + "-" + maxCmdCntPerRtn;
@@ -372,13 +372,13 @@ public class SafeHomeSimulator
         }
 
         File parentDir = new File(parentDirPath);
-        if(!parentDir.exists()) {
+        if (!parentDir.exists()) {
             parentDir.mkdir();
         }
 
         String avgMeasurementDirectoryPath = parentDirPath + File.separator + "avg";
         File avgDir = new File(avgMeasurementDirectoryPath);
-        if(!avgDir.exists()) {
+        if (!avgDir.exists()) {
             avgDir.mkdir();
         }
 
@@ -394,7 +394,7 @@ public class SafeHomeSimulator
             fileWriter.write(logStr);
             fileWriter.close();
 
-            for(Map.Entry<MEASUREMENT_TYPE, String> entry : perMeasurementAvgMap.entrySet()) {
+            for (Map.Entry<MEASUREMENT_TYPE, String> entry : perMeasurementAvgMap.entrySet()) {
                 String measurementFilePath = avgMeasurementDirectoryPath + File.separator + entry.getKey().name() + ".dat";
 
                 fileWriter = new FileWriter(measurementFilePath);
@@ -427,10 +427,10 @@ public class SafeHomeSimulator
         globalResult += "Summary-Start\t\n";
 
         for (MEASUREMENT_TYPE measurementType : measurementList) {
-            if(measurementType == MEASUREMENT_TYPE.STRETCH_RATIO && !SafeHomeSimulator.CONSISTENCY_ORDERING_LIST.contains(CONSISTENCY_TYPE.EVENTUAL))
+            if (measurementType == MEASUREMENT_TYPE.STRETCH_RATIO && !SafeHomeSimulator.CONSISTENCY_ORDERING_LIST.contains(CONSISTENCY_TYPE.EVENTUAL))
                 continue;
 
-            if(measurementType == MEASUREMENT_TYPE.COMPARE_WV_VS_GSV_END_STATE && ( !SafeHomeSimulator.CONSISTENCY_ORDERING_LIST.contains(CONSISTENCY_TYPE.STRONG) || !SafeHomeSimulator.CONSISTENCY_ORDERING_LIST.contains(CONSISTENCY_TYPE.WEAK) )   )
+            if (measurementType == MEASUREMENT_TYPE.COMPARE_WV_VS_GSV_END_STATE && ( !SafeHomeSimulator.CONSISTENCY_ORDERING_LIST.contains(CONSISTENCY_TYPE.STRONG) || !SafeHomeSimulator.CONSISTENCY_ORDERING_LIST.contains(CONSISTENCY_TYPE.WEAK) )   )
                 continue;
 
             globalResult += "================================\n";
@@ -439,10 +439,10 @@ public class SafeHomeSimulator
             String perMeasurementInfo = "";
 
             boolean isHeaderPrinted = false;
-            for(double variable : variableList) {
-                if(!isHeaderPrinted) {
+            for (double variable : variableList) {
+                if (!isHeaderPrinted) {
                     perMeasurementInfo += changingParameterName + "\t";
-                    for(CONSISTENCY_TYPE consistency_type : globalDataCollector.get(variable).get(measurementType).keySet()) {
+                    for (CONSISTENCY_TYPE consistency_type : globalDataCollector.get(variable).get(measurementType).keySet()) {
                         perMeasurementInfo += HeaderListSnglTn.getInstance().CONSISTENCY_HEADER.get(consistency_type) + "\t";
                     }
                     perMeasurementInfo += "\n";
@@ -452,7 +452,7 @@ public class SafeHomeSimulator
 
                 perMeasurementInfo += variable + "\t";
 
-                for(CONSISTENCY_TYPE consistency_type : globalDataCollector.get(changingParameterValue).get(measurementType).keySet()) {
+                for (CONSISTENCY_TYPE consistency_type : globalDataCollector.get(changingParameterValue).get(measurementType).keySet()) {
                     double avg = globalDataCollector.get(variable).get(measurementType).get(consistency_type);
                     perMeasurementInfo += avg + "\t";
                 }
@@ -476,7 +476,7 @@ public class SafeHomeSimulator
             MeasurementCollector measurementCollector) throws Exception {
         List<Routine> routineSet = null;
 
-        if(IS_RUNNING_BENCHMARK) {
+        if (IS_RUNNING_BENCHMARK) {
             Benchmark benchmarkingTool = new Benchmark(RANDOM_SEED, MINIMUM_CONCURRENCY_LEVEL_FOR_BENCHMARKING);
             benchmarkingTool.initiateDevices(devIDlist);
             routineSet = benchmarkingTool.GetOneWorkload();
@@ -494,14 +494,14 @@ public class SafeHomeSimulator
         Map<DEV_ID, Routine> GSV_devID_lastAccesedRtn_Map = null;
         Map<DEV_ID, Routine> WV_devID_lastAccesedRtn_Map = null;
 
-        for(CONSISTENCY_TYPE consistency_type :  SafeHomeSimulator.CONSISTENCY_ORDERING_LIST) {
+        for (CONSISTENCY_TYPE consistency_type :  SafeHomeSimulator.CONSISTENCY_ORDERING_LIST) {
             ExpResults expResult = runExperiment(devIDlist, consistency_type, routineSet, SIMULATION_START_TIME);
 
-            if(measurementList.contains(MEASUREMENT_TYPE.COMPARE_WV_VS_GSV_END_STATE)) {
-                if(consistency_type == CONSISTENCY_TYPE.WEAK) {
+            if (measurementList.contains(MEASUREMENT_TYPE.COMPARE_WV_VS_GSV_END_STATE)) {
+                if (consistency_type == CONSISTENCY_TYPE.WEAK) {
                     WV_devID_lastAccesedRtn_Map = expResult.measurement.devID_lastAccesedRtn_Map;
                 }
-                else if(consistency_type == CONSISTENCY_TYPE.STRONG) {
+                else if (consistency_type == CONSISTENCY_TYPE.STRONG) {
                     GSV_devID_lastAccesedRtn_Map = expResult.measurement.devID_lastAccesedRtn_Map;
                 }
             }
@@ -562,21 +562,21 @@ public class SafeHomeSimulator
                     MEASUREMENT_TYPE.DEVICE_UTILIZATION,
                     expResult.measurement.devUtilizationPrcntHistogram);
 
-            if(consistency_type == CONSISTENCY_TYPE.EVENTUAL) {
+            if (consistency_type == CONSISTENCY_TYPE.EVENTUAL) {
                 measurementCollector.collectData(changingParameterValue, consistency_type,
                         MEASUREMENT_TYPE.STRETCH_RATIO,
                         expResult.stretchRatioHistogram);
             }
         }
 
-        if(measurementList.contains(MEASUREMENT_TYPE.COMPARE_WV_VS_GSV_END_STATE)) {
-            if( (WV_devID_lastAccesedRtn_Map != null) && (GSV_devID_lastAccesedRtn_Map != null) ) {
+        if (measurementList.contains(MEASUREMENT_TYPE.COMPARE_WV_VS_GSV_END_STATE)) {
+            if ( (WV_devID_lastAccesedRtn_Map != null) && (GSV_devID_lastAccesedRtn_Map != null) ) {
                 assert(GSV_devID_lastAccesedRtn_Map.size() == WV_devID_lastAccesedRtn_Map.size());
 
                 float totalDevice = GSV_devID_lastAccesedRtn_Map.size();
                 float endStateMismatchCount = 0;
 
-                for(Map.Entry<DEV_ID, Routine> entry : GSV_devID_lastAccesedRtn_Map.entrySet() ) {
+                for (Map.Entry<DEV_ID, Routine> entry : GSV_devID_lastAccesedRtn_Map.entrySet() ) {
                     DEV_ID device = entry.getKey();
                     Routine routineGSV = entry.getValue();
 
@@ -584,7 +584,7 @@ public class SafeHomeSimulator
 
                     Routine routineWV = WV_devID_lastAccesedRtn_Map.get(device);
 
-                    if(routineWV.ID != routineGSV.ID) {
+                    if (routineWV.ID != routineGSV.ID) {
                         endStateMismatchCount++;
                     }
                 }
@@ -603,7 +603,7 @@ public class SafeHomeSimulator
 
     private static List<MEASUREMENT_TYPE> getMeasurementList() {
         List<MEASUREMENT_TYPE> measurementList = new ArrayList<>();
-        if(isSchedulingPoliciesComparison) {
+        if (isSchedulingPoliciesComparison) {
             // in the config file, set it true only for generating Fig14 data (EUROSYS 2021 submission)
             CONSISTENCY_ORDERING_LIST.add(CONSISTENCY_TYPE.LAZY_FCFS);
             CONSISTENCY_ORDERING_LIST.add(CONSISTENCY_TYPE.LAZY_PRIORITY);
@@ -611,7 +611,7 @@ public class SafeHomeSimulator
             measurementList.add(MEASUREMENT_TYPE.E2E_RTN_TIME);
             measurementList.add(MEASUREMENT_TYPE.PARALLEL_DELTA);
             measurementList.add(MEASUREMENT_TYPE.ISVLTN5_RTN_LIFESPAN_COLLISION_PERCENT);
-        } else if(isAnalyzingTLunderEV) {
+        } else if (isAnalyzingTLunderEV) {
             CONSISTENCY_ORDERING_LIST.add(CONSISTENCY_TYPE.STRONG); //GSV
             CONSISTENCY_ORDERING_LIST.add(CONSISTENCY_TYPE.EVENTUAL);
             measurementList.add(MEASUREMENT_TYPE.E2E_RTN_TIME);
@@ -645,26 +645,26 @@ public class SafeHomeSimulator
 
     private static String setChangingParameterName(int varIdx) {
         Double changingParameterValue = variableList.get(varIdx);
-        if(isVaryShrinkFactor) {
+        if (isVaryShrinkFactor) {
             shrinkFactor = changingParameterValue;
             return "shrinkFactor";
-        } else if(isVaryZipfAlpha) {
+        } else if (isVaryZipfAlpha) {
             zipF = changingParameterValue;
             return "zipF";
-        } else if(isVaryLongRunningPercent) {
+        } else if (isVaryLongRunningPercent) {
             longRrtnPcntg = changingParameterValue;
             return "longRrtnPcntg";
-        } else if(isVaryCommandCntPerRtn) {
+        } else if (isVaryCommandCntPerRtn) {
             double maxVal = variableCorrespndinMaxValList.get(varIdx);
             minCmdCntPerRtn = changingParameterValue;
             maxCmdCntPerRtn = maxVal;
             return "minCmdCntPerRtn";
-        } else if(isVaryLongRunningDuration) {
+        } else if (isVaryLongRunningDuration) {
             double maxVal = variableCorrespndinMaxValList.get(varIdx);
             minLngRnCmdTimSpn = changingParameterValue;
             maxLngRnCmdTimSpn = maxVal;
             return "minLngRnCmdTimSpn";
-        } else if(isVaryShortRunningDuration) {
+        } else if (isVaryShortRunningDuration) {
             double maxVal = variableCorrespndinMaxValList.get(varIdx);
             minShrtCmdTimeSpn = changingParameterValue;
             maxShrtCmdTimeSpn = maxVal;
@@ -672,7 +672,7 @@ public class SafeHomeSimulator
         } else if (isVaryMustCmdPercentage) {
             mustCmdPercentage = changingParameterValue;
             return "mustPrcnt";
-        } else if(isVaryDevFailureRatio) {
+        } else if (isVaryDevFailureRatio) {
             devFailureRatio = changingParameterValue;
             return "DevFailPrcnt";
         } else {
@@ -686,8 +686,8 @@ public class SafeHomeSimulator
         assert(0 < devID_ProbBoundaryMap.size());
         assert(0.0f <= randDouble && randDouble <= 1.0f);
 
-        for(Map.Entry<DEV_ID, ZipfProbBoundary> entry : devID_ProbBoundaryMap.entrySet()) {
-            if(entry.getValue().isInsideBoundary(randDouble))
+        for (Map.Entry<DEV_ID, ZipfProbBoundary> entry : devID_ProbBoundaryMap.entrySet()) {
+            if (entry.getValue().isInsideBoundary(randDouble))
                 return entry.getKey();
         }
 
@@ -704,10 +704,10 @@ public class SafeHomeSimulator
 
         List<Float> cumulativeProbabilityList = new ArrayList<>();
 
-        for(int I = 0 ; I < devIDlist.size() ; I++) {
+        for (int I = 0 ; I < devIDlist.size() ; I++) {
             float probability = (float)zipf.probability(I + 1);
 
-            if(I == 0)
+            if (I == 0)
                 cumulativeProbabilityList.add(probability);
             else
                 cumulativeProbabilityList.add(probability + cumulativeProbabilityList.get(I - 1));
@@ -717,10 +717,10 @@ public class SafeHomeSimulator
 
         float lowerInclusive = 0.0f;
 
-        for(int I = 0 ; I < devIDlist.size() ; I++) {
+        for (int I = 0 ; I < devIDlist.size() ; I++) {
             float upperExclusive = cumulativeProbabilityList.get(I);
 
-            if(I == devIDlist.size() - 1)
+            if (I == devIDlist.size() - 1)
                 upperExclusive = 1.01f;
 
             //System.out.println( "item " + I + " lowerInclusive = " + lowerInclusive + " upperExclusive = " + upperExclusive );
@@ -737,9 +737,9 @@ public class SafeHomeSimulator
         Map<DEV_ID, Integer> histogram = new HashMap<>();
 
         Double sampleSize = 1000000.0;
-        for(int I = 0 ; I < sampleSize ; I++) {
+        for (int I = 0 ; I < sampleSize ; I++) {
             DEV_ID devId = getZipfDistDevID(rand.nextFloat());
-            if(!histogram.containsKey(devId))
+            if (!histogram.containsKey(devId))
                 histogram.put(devId, 0);
 
             histogram.put(devId, histogram.get(devId) + 1 );
@@ -747,8 +747,8 @@ public class SafeHomeSimulator
 
         String str = "";
 
-        for(DEV_ID devId: devIDlist) {
-            if(histogram.containsKey(devId)) {
+        for (DEV_ID devId: devIDlist) {
+            if (histogram.containsKey(devId)) {
                 Double percentage = (histogram.get(devId) / sampleSize) * 100.0;
                 String formattedStr = String.format("%s -> selection probability = %.2f%%", devId.name(), percentage);
                 str += formattedStr + "\n";
@@ -766,7 +766,7 @@ public class SafeHomeSimulator
     }
 
     private static List<Routine> generateAutomatedRtn(int nonNegativeSeed) {
-        if(maxCmdCntPerRtn < minCmdCntPerRtn ||
+        if (maxCmdCntPerRtn < minCmdCntPerRtn ||
                 maxLngRnCmdTimSpn < minLngRnCmdTimSpn ||
                 maxShrtCmdTimeSpn < minShrtCmdTimeSpn) {
             System.out.println("\n ERROR: maxCmdCntPerRtn = " + maxCmdCntPerRtn + ", minCmdCntPerRtn = " + minCmdCntPerRtn);
@@ -778,7 +778,7 @@ public class SafeHomeSimulator
         List<Routine> routineList = new ArrayList<>();
         Random rand;
 
-        if(0 <= nonNegativeSeed)
+        if (0 <= nonNegativeSeed)
             rand = new Random(nonNegativeSeed);
         else
             rand = new Random();
@@ -787,15 +787,15 @@ public class SafeHomeSimulator
 
         int longRunningRoutineCount = 0;
 
-        for(int RoutineCount = 0 ; RoutineCount < totalConcurrentRtn ; ++RoutineCount) {
+        for (int RoutineCount = 0 ; RoutineCount < totalConcurrentRtn ; ++RoutineCount) {
             float nextDbl = rand.nextFloat();
             nextDbl = (nextDbl == 1.0f) ? nextDbl - 0.001f : nextDbl;
             boolean isLongRunning = (nextDbl < longRrtnPcntg);
 
-            if(isLongRunning)
+            if (isLongRunning)
                 longRunningRoutineCount++;
 
-            if(isAtleastOneLongRunning && (RoutineCount == totalConcurrentRtn - 1) && longRunningRoutineCount == 0) {
+            if (isAtleastOneLongRunning && (RoutineCount == totalConcurrentRtn - 1) && longRunningRoutineCount == 0) {
                 isLongRunning = true; // at least one routine will be long running;
             }
 
@@ -803,7 +803,7 @@ public class SafeHomeSimulator
             int difference = 1 + (int)maxCmdCntPerRtn - (int)minCmdCntPerRtn;
             int totalCommandInThisRtn = (int)minCmdCntPerRtn + rand.nextInt(difference);
 
-            if(devIDlist.size() < totalCommandInThisRtn ) {
+            if (devIDlist.size() < totalCommandInThisRtn ) {
                 System.out.println("\n ERROR: ID 2z3A9s : totalCommandInThisRtn = " + totalCommandInThisRtn + " > devIDlist.size() = " + devIDlist.size());
                 System.exit(1);
             }
@@ -816,18 +816,16 @@ public class SafeHomeSimulator
 
                 devID = getZipfDistDevID(rand.nextFloat());
 
-                if(devIDDurationMap.containsKey(devID))
+                if (devIDDurationMap.containsKey(devID))
                     continue;
 
                 int duration;
                 int currentDurationMapSize = devIDDurationMap.size();
                 int middleCommandIndex = totalCommandInThisRtn / 2;
-                if(isLongRunning && ( currentDurationMapSize == middleCommandIndex) ) { // select the  middle command as long running command
+                if (isLongRunning && ( currentDurationMapSize == middleCommandIndex) ) { // select the  middle command as long running command
                     difference = 1 + (int)maxLngRnCmdTimSpn - (int)minLngRnCmdTimSpn;
                     duration = (int)minLngRnCmdTimSpn + rand.nextInt(difference);
-                }
-                else
-                {
+                } else {
                     difference = 1 + (int)maxShrtCmdTimeSpn - (int)minShrtCmdTimeSpn;
                     duration = (int)minShrtCmdTimeSpn + rand.nextInt(difference);
                 }
@@ -838,13 +836,14 @@ public class SafeHomeSimulator
 
             Routine rtn = new Routine();
 
-            for(DEV_ID devID : devList) {
+            for (DEV_ID devID : devList) {
                 assert(devIDDurationMap.containsKey(devID));
 
                 nextDbl = rand.nextFloat();
                 nextDbl = (nextDbl == 1.0f) ? nextDbl - 0.001f : nextDbl;
                 boolean isMust = (nextDbl < mustCmdPercentage);
-                Command cmd = new Command(devID, devIDDurationMap.get(devID), isMust, mustCmdPercentage);
+                DEV_STATE dev_state = DEV_STATE.values()[rand.nextInt(devStateNumber)];
+                Command cmd = new Command(devID,dev_state, devIDDurationMap.get(devID), isMust, mustCmdPercentage);
                 rtn.addCommand(cmd);
             }
             routineList.add(rtn);
@@ -852,13 +851,13 @@ public class SafeHomeSimulator
 
         Collections.shuffle(routineList, rand);
 
-        if(shrinkFactor == 0.0) {
-            for(int index = 0 ; index < routineList.size() ; ++index) {
+        if (shrinkFactor == 0.0) {
+            for (int index = 0 ; index < routineList.size() ; ++index) {
                 routineList.get(index).registrationTime = SIMULATION_START_TIME;
             }
         } else {
             float allRtnBackToBackExcTime = 0.0f;
-            for(Routine rtn : routineList) {
+            for (Routine rtn : routineList) {
                 allRtnBackToBackExcTime += rtn.getBackToBackCmdExecutionTimeWithoutGap();
             }
 
@@ -867,19 +866,19 @@ public class SafeHomeSimulator
             int upperLimit = (int)Math.ceil(simulationLastRtnStartTime);
 
             List<Integer> randStartPointList = new ArrayList<>();
-            for(int I = 0 ; I < routineList.size() ; I++) {
+            for (int I = 0 ; I < routineList.size() ; I++) {
                 int randStartPoint = SIMULATION_START_TIME +  ((upperLimit == 0) ? 0 : rand.nextInt(upperLimit));
                 randStartPointList.add(randStartPoint);
             }
 
             Collections.sort(randStartPointList);
 
-            for(int I = 0 ; I < routineList.size() ; I++) {
+            for (int I = 0 ; I < routineList.size() ; I++) {
                 routineList.get(I).registrationTime = randStartPointList.get(I);
             }
         }
 
-        for(int index = 0 ; index < routineList.size() ; ++index) {
+        for (int index = 0 ; index < routineList.size() ; ++index) {
             routineList.get(index).ID = getUniqueRtnID();
         }
 
@@ -890,7 +889,7 @@ public class SafeHomeSimulator
 
     private static String printInitialRoutineList(List<Routine> routineList) {
         String logStr = "";
-        for(Routine rtn : routineList) {
+        for (Routine rtn : routineList) {
             System.out.println("# " + rtn);
             logStr += "#" + rtn + "\n";
         }
@@ -905,14 +904,14 @@ public class SafeHomeSimulator
 
         LockTable lockTable = new LockTable(_devIDlist, _consistencyType);
         List<Routine> perExpRtnList = new ArrayList<>();
-        for(Routine originalRtn: _originalRtnList) {
+        for (Routine originalRtn: _originalRtnList) {
             perExpRtnList.add(originalRtn.getDeepCopy());
         }
 
 
         lockTable.register(perExpRtnList, _simulationStartTime);
 
-//        if(_consistencyType == CONSISTENCY_TYPE.EVENTUAL) {
+//        if (_consistencyType == CONSISTENCY_TYPE.EVENTUAL) {
 //            System.out.println(lockTable);
 //            System.out.println("Lock table printed... Terminating program....");
 //            System.exit(1);
@@ -920,13 +919,13 @@ public class SafeHomeSimulator
 
         ExpResults expResults = new ExpResults();
 
-//        if(_consistencyType != CONSISTENCY_TYPE.WEAK)
+//        if (_consistencyType != CONSISTENCY_TYPE.WEAK)
 //            expResults.failureAnalyzer = new FailureAnalyzer(lockTable.lockTable, _consistencyType);
 
         expResults.measurement = new Measurement(lockTable);
 
 
-        for(Routine routine : perExpRtnList) {
+        for (Routine routine : perExpRtnList) {
             float data;
             Integer count;
 
@@ -935,7 +934,7 @@ public class SafeHomeSimulator
             data = routine.getStartDelay();
             count = expResults.waitTimeHistogram.get(data);
 
-            if(count == null)
+            if (count == null)
                 expResults.waitTimeHistogram.put(data, 1);
             else
                 expResults.waitTimeHistogram.put(data, count + 1);
@@ -944,7 +943,7 @@ public class SafeHomeSimulator
             data = routine.getEndToEndLatency();
             count = expResults.e2eTimeHistogram.get(data);
 
-            if(count == null)
+            if (count == null)
                 expResults.e2eTimeHistogram.put(data, 1);
             else
                 expResults.e2eTimeHistogram.put(data, count + 1);
@@ -955,7 +954,7 @@ public class SafeHomeSimulator
 
             count = expResults.back2backRtnExectnTimeHistogram.get(data);
 
-            if(count == null)
+            if (count == null)
                 expResults.back2backRtnExectnTimeHistogram.put(data, 1);
             else
                 expResults.back2backRtnExectnTimeHistogram.put(data, count + 1);
@@ -966,7 +965,7 @@ public class SafeHomeSimulator
             data = routine.getLatencyOverheadPrcnt();
             count = expResults.latencyOverheadHistogram.get(data);
 
-            if(count == null)
+            if (count == null)
                 expResults.latencyOverheadHistogram.put(data, 1);
             else
                 expResults.latencyOverheadHistogram.put(data, count + 1);
@@ -974,7 +973,7 @@ public class SafeHomeSimulator
             data = routine.getE2EvsWaittime();
             count = expResults.e2eVsWaitTimeHistogram.get(data);
 
-            if(count == null)
+            if (count == null)
                 expResults.e2eVsWaitTimeHistogram.put(data, 1);
             else
                 expResults.e2eVsWaitTimeHistogram.put(data, count + 1);
@@ -985,7 +984,7 @@ public class SafeHomeSimulator
             data = routine.getStretchRatio();
             count = expResults.stretchRatioHistogram.get(data);
 
-            if(count == null)
+            if (count == null)
                 expResults.stretchRatioHistogram.put(data, 1);
             else
                 expResults.stretchRatioHistogram.put(data, count + 1);

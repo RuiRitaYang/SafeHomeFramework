@@ -16,13 +16,13 @@
 package SafeHomeSimulator;
 
 public enum DEV_STATE {
+  OFF,
+  ON,
   ALARM,
   CLOSED,
   FIRE,
   FIREALARM,
   NIGHTALARM,
-  OFF,
-  ON,
   OPEN,
   SIRENCONTINUOUS,
   SIRENOFF,

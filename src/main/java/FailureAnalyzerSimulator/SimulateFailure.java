@@ -61,6 +61,7 @@ public class SimulateFailure
 
     private static double zipF = SysParamSngltn.getInstance().zipF; //  0.01;
     public static int devRegisteredOutOf65Dev = SysParamSngltn.getInstance().devRegisteredOutOf65Dev;
+    private static double devStateNumber = SysParamSngltn.getInstance().devStateNumber; // 2
     private static int maxConcurrentRtn = SysParamSngltn.getInstance().maxConcurrentRtn; //  100; //in current version totalConcurrentRtn = maxConcurrentRtn;
 
     private static double longRrtnPcntg = SysParamSngltn.getInstance().longRrtnPcntg; //  0.1;
