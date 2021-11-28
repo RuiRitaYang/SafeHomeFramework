@@ -91,7 +91,7 @@ public class SafeHomeSimulator
     private static List<DEV_ID> devIDlist = new ArrayList<>();
     private static Map<DEV_ID, ZipfProbBoundary> devID_ProbBoundaryMap = new HashMap<>();
 
-//<<<<<<< Updated upstream
+    //<<<<<<< Updated upstream
 //=======
 //    private static final int SIMULATION_START_TIME = 0;
 //    public static final int MAX_DATAPOINT_COLLECTON_SIZE = 5000;
@@ -106,15 +106,13 @@ public class SafeHomeSimulator
     ///////////////////////////////////////////////////////////////////////////////////
 
 
-    private static void initiateSyntheticDevices()
-    {
+    private static void initiateSyntheticDevices() {
         int count = devRegisteredOutOf65Dev;
         int totalAvailable = DEV_ID.values().length;
 
         count = Math.min(count, totalAvailable);
 
-        for(DEV_ID devID : DEV_ID.values())
-        {
+        for(DEV_ID devID : DEV_ID.values()) {
             count--;
             devIDlist.add(devID);
 
@@ -124,8 +122,7 @@ public class SafeHomeSimulator
     }
 
 
-    private static String preparePrintableParameters()
-    {
+    private static String preparePrintableParameters() {
         String logStr = "";
 
         System.out.println("###################################");
@@ -239,33 +236,20 @@ public class SafeHomeSimulator
 
     public static void main (String[] args) throws Exception
     {
-        Benchmark benchmarkingTool = null;
-
-        if(IS_RUNNING_BENCHMARK)
-        {
-            benchmarkingTool = new Benchmark(RANDOM_SEED, MINIMUM_CONCURRENCY_LEVEL_FOR_BENCHMARKING);
-            benchmarkingTool.initiateDevices(devIDlist);
-        }
-        else
-        {
-            initiateSyntheticDevices();
-        }
+        if(!IS_RUNNING_BENCHMARK) { initiateSyntheticDevices(); }
 
         //////////////////////////////////////////////////////////////////////////////////
         /////////////////////////////---CHECKING-DIRECTORY-///////////////////////////////
 
         File dataStorageDir = new File(dataStorageDirectory);
 
-        if(SysParamSngltn.isGenerateSeparateOutputDir)
-        { // original approach
-            if(!dataStorageDir.exists())
-            {
+        if(SysParamSngltn.isGenerateSeparateOutputDir) { // original approach
+            if(!dataStorageDir.exists()) {
                 System.out.println("\n ERROR: directory not found: " + dataStorageDirectory);
                 System.exit(1);
             }
         }
-        else
-        { //Rui's version
+        else {  //Rui's version
             if(!dataStorageDir.exists()) {
                 dataStorageDir.mkdirs();
                 System.out.println("\n Creating directory for: " + dataStorageDirectory);
@@ -274,7 +258,6 @@ public class SafeHomeSimulator
         //////////////////////////////////////////////////////////////////////////////////
 
         String logStr = "";
-
 
         MeasurementCollector measurementCollector = new MeasurementCollector(MAX_DATAPOINT_COLLECTON_SIZE);
 
@@ -285,137 +268,24 @@ public class SafeHomeSimulator
         Double changingParameterValue = -1.0;
         double lastGeneratedZipfeanFor = Double.MAX_VALUE; // NOTE: declare zipfean here... DO NOT declare it inside the for loop!
 
-        List<MEASUREMENT_TYPE> measurementList = new ArrayList<>();
-
-        if(isSchedulingPoliciesComparison) // in the config file, set it true only for generating Fig14 data (EUROSYS 2021 submission)
-        {
-            CONSISTENCY_ORDERING_LIST.add(CONSISTENCY_TYPE.LAZY_FCFS);
-            CONSISTENCY_ORDERING_LIST.add(CONSISTENCY_TYPE.LAZY_PRIORITY);
-            CONSISTENCY_ORDERING_LIST.add(CONSISTENCY_TYPE.EVENTUAL);
-            //////////////////////////////////////////////////////////////
-            measurementList.add(MEASUREMENT_TYPE.E2E_RTN_TIME);
-            measurementList.add(MEASUREMENT_TYPE.PARALLEL_DELTA);
-            measurementList.add(MEASUREMENT_TYPE.ISVLTN5_RTN_LIFESPAN_COLLISION_PERCENT);
-        }
-        else if(isAnalyzingTLunderEV)
-        {
-            CONSISTENCY_ORDERING_LIST.add(CONSISTENCY_TYPE.STRONG); //GSV
-            CONSISTENCY_ORDERING_LIST.add(CONSISTENCY_TYPE.EVENTUAL);
-            ////////////////////////////////////////////////////////////////
-            measurementList.add(MEASUREMENT_TYPE.E2E_RTN_TIME);
-            measurementList.add(MEASUREMENT_TYPE.ISVLTN5_RTN_LIFESPAN_COLLISION_PERCENT);
-        }
-        else
-        {
-            ////////////////////////////////////////////////////////////////////////////////
-            CONSISTENCY_ORDERING_LIST.add(CONSISTENCY_TYPE.STRONG);
-            CONSISTENCY_ORDERING_LIST.add(CONSISTENCY_TYPE.RELAXED_STRONG);
-            CONSISTENCY_ORDERING_LIST.add(CONSISTENCY_TYPE.EVENTUAL);
-            CONSISTENCY_ORDERING_LIST.add(CONSISTENCY_TYPE.WEAK);
-            CONSISTENCY_ORDERING_LIST.add(CONSISTENCY_TYPE.LAZY_FCFS);
-            CONSISTENCY_ORDERING_LIST.add(CONSISTENCY_TYPE.LAZY_PRIORITY);
-            ////////////////////////////////////////////////////////////////////////////////
-
-            measurementList.add(MEASUREMENT_TYPE.WAIT_TIME);
-            measurementList.add(MEASUREMENT_TYPE.BACK2BACK_RTN_CMD_EXCTN_TIME);
-            measurementList.add(MEASUREMENT_TYPE.E2E_RTN_TIME);
-            measurementList.add(MEASUREMENT_TYPE.LATENCY_OVERHEAD);
-            measurementList.add(MEASUREMENT_TYPE.E2E_VS_WAITTIME);
-            measurementList.add(MEASUREMENT_TYPE.STRETCH_RATIO);
-            measurementList.add(MEASUREMENT_TYPE.PARALLEL_DELTA);
-            measurementList.add(MEASUREMENT_TYPE.PARALLEL_RAW);
-            measurementList.add(MEASUREMENT_TYPE.ORDERR_MISMATCH_BUBBLE);
-            measurementList.add(MEASUREMENT_TYPE.DEVICE_UTILIZATION);
-//          measurementList.add(MEASUREMENT_TYPE.ISVLTN1_PER_RTN_COLLISION_COUNT);
-//          measurementList.add(MEASUREMENT_TYPE.ISVLTN2_VIOLATED_RTN_PRCNT);
-//          measurementList.add(MEASUREMENT_TYPE.ISVLTN3_CMD_VIOLATION_PRCNT_PER_RTN);
-//          measurementList.add(MEASUREMENT_TYPE.ISVLTN4_CMD_TO_COMMIT_COLLISION_TIMESPAN_PRCNT);
-            measurementList.add(MEASUREMENT_TYPE.ISVLTN5_RTN_LIFESPAN_COLLISION_PERCENT);
-
-            measurementList.add(MEASUREMENT_TYPE.COMPARE_WV_VS_GSV_END_STATE);
-            ////////////////////////////////////////////////////////////////////////////////
-        }
-
-
-        ////////////////////////////////////////////////////////////////////////////////
+        List<MEASUREMENT_TYPE> measurementList = getMeasurementList();
 
         boolean isBenchmarkingDoneForSinglePass = false;
-
         String changingParameterName = null;
-        for(int varIdx = 0; varIdx < variableList.size() || IS_RUNNING_BENCHMARK; varIdx++)
-        {
-            if(IS_RUNNING_BENCHMARK && isBenchmarkingDoneForSinglePass)
-                break;
-
-            if(IS_RUNNING_BENCHMARK)
-            {
+        for(int varIdx = 0; varIdx < variableList.size() || IS_RUNNING_BENCHMARK; varIdx++) {
+            if(IS_RUNNING_BENCHMARK && isBenchmarkingDoneForSinglePass) { break; }
+            if(IS_RUNNING_BENCHMARK) {
                 variableList = new ArrayList<>();
                 variableList.add(-123.0);
 
                 isBenchmarkingDoneForSinglePass = true;
                 changingParameterValue = variableList.get(0);
                 changingParameterName = "benchmarking";
-            }
-            else
-            {
+            } else {
                 changingParameterValue = variableList.get(varIdx);
+                changingParameterName = setChangingParameterName(varIdx);
 
-                if(isVaryShrinkFactor)
-                {
-                    shrinkFactor = changingParameterValue;
-                    changingParameterName = "shrinkFactor";
-                }
-                else if(isVaryZipfAlpha)
-                {
-                    zipF = changingParameterValue;
-                    changingParameterName = "zipF";
-                }
-                else if(isVaryLongRunningPercent)
-                {
-                    longRrtnPcntg = changingParameterValue;
-                    changingParameterName = "longRrtnPcntg";
-                }
-                else if(isVaryCommandCntPerRtn)
-                {
-                    double maxVal = variableCorrespndinMaxValList.get(varIdx);
-
-                    minCmdCntPerRtn = changingParameterValue;
-                    maxCmdCntPerRtn = maxVal;
-                    changingParameterName = "minCmdCntPerRtn";
-                }
-                else if(isVaryLongRunningDuration)
-                {
-                    double maxVal = variableCorrespndinMaxValList.get(varIdx);
-                    minLngRnCmdTimSpn = changingParameterValue;
-                    maxLngRnCmdTimSpn = maxVal;
-                    changingParameterName = "minLngRnCmdTimSpn";
-                }
-                else if(isVaryShortRunningDuration)
-                {
-                    double maxVal = variableCorrespndinMaxValList.get(varIdx);
-
-                    minShrtCmdTimeSpn = changingParameterValue;
-                    maxShrtCmdTimeSpn = maxVal;
-                    changingParameterName = "minShrtCmdTimeSpn";
-                }
-                else if(isVaryMustCmdPercentage)
-                {
-                    mustCmdPercentage = changingParameterValue;
-                    changingParameterName = "mustPrcnt";
-                }
-                else if(isVaryDevFailureRatio)
-                {
-                    devFailureRatio = changingParameterValue;
-                    changingParameterName = "DevFailPrcnt";
-                }
-                else
-                {
-                    System.out.println("Error: unknown selection.... Terminating...");
-                    System.exit(1);
-                }
-
-                if(lastGeneratedZipfeanFor != zipF)
-                {
+                if(lastGeneratedZipfeanFor != zipF) {
                     lastGeneratedZipfeanFor = zipF;
                     String zipFianStr = prepareZipfian();
                     System.out.println(zipFianStr);
@@ -426,100 +296,247 @@ public class SafeHomeSimulator
             }
 
             int resolution = 10;
-            int stepSize = totalSampleCount / resolution;
-            if(stepSize == 0)
-                stepSize = 1;
+            int stepSize = Math.max(totalSampleCount / resolution, 1);
 
-            for(int I = 0 ; I < totalSampleCount ; I++)
-            {
-                List<Routine> routineSet = null;
-
-                if(I == totalSampleCount - 1)
-                {
+            for (int I = 0 ; I < totalSampleCount ; I++) {
+                // Report progress
+                if(I == totalSampleCount - 1 || totalSampleCount % stepSize == 0) {
                     if(IS_RUNNING_BENCHMARK)
-                        System.out.println("currently Running BENCHMARK...... Progress = 100%");
+                        System.out.println("currently Running BENCHMARK...... Progress = " + (int) (100.0 * (I + 1) / totalSampleCount) + "%");
                     else
-                        System.out.println("currently Running for, " + changingParameterName + " = " +  changingParameterValue  + " Progress = " + " 100%");
-                }
-                else if(totalSampleCount % stepSize == 0)
-                {
-                    if(IS_RUNNING_BENCHMARK)
-                        System.out.println("currently Running BENCHMARK...... Progress = " + (int) (100.0 * ((float)I / (float)totalSampleCount)) + "%");
-                    else
-                        System.out.println("currently Running for, " + changingParameterName + " = " +  changingParameterValue  + " Progress = " + (int) (100.0 * ((float)I / (float)totalSampleCount)) + "%");
+                        System.out.println("currently Running for, " + changingParameterName + " = " +  changingParameterValue  + " Progress = " + (int) (100.0 * (I + 1) / totalSampleCount) + "%");
                 }
 
-                if(IS_RUNNING_BENCHMARK)
-                {
-                    routineSet = benchmarkingTool.GetOneWorkload();
-                    System.out.printf("Routines: %s \n", routineSet.toString());
-//                    System.out.printf("Number of routine in total %d \n", routineSet.size());
-                    int total_num_command = 0;
-                    for (Routine aRoutineSet : routineSet) {
-                        total_num_command += aRoutineSet.getNumberofCommand();
+                runAndCollect(changingParameterName, changingParameterValue, measurementList, measurementCollector);
+            }
+
+            logStr += "\n=========================================================================\n";
+
+            if(!globalDataCollector.containsKey(changingParameterValue))
+                globalDataCollector.put(changingParameterValue, new LinkedHashMap<>());
+
+            for(MEASUREMENT_TYPE measurementType : measurementList) {
+                if(!globalDataCollector.get(changingParameterValue).containsKey(measurementType))
+                    globalDataCollector.get(changingParameterValue).put(measurementType, new LinkedHashMap<>());
+
+                if(measurementType == MEASUREMENT_TYPE.STRETCH_RATIO ) {
+                    if(SafeHomeSimulator.CONSISTENCY_ORDERING_LIST.contains(CONSISTENCY_TYPE.EVENTUAL)) {
+                        double avg = measurementCollector.finalizePrepareStatsAndGetAvg(changingParameterValue, CONSISTENCY_TYPE.EVENTUAL, measurementType);
+                        avg = (double)((int)(avg * 1000.0))/1000.0;
+                        globalDataCollector.get(changingParameterValue).get(measurementType).put(CONSISTENCY_TYPE.EVENTUAL, avg);
                     }
-                    System.out.printf("Average number of command: %f \n", total_num_command * 1.0 / routineSet.size());
+                }
+                else if(measurementType == MEASUREMENT_TYPE.COMPARE_WV_VS_GSV_END_STATE) {
+                    if(SafeHomeSimulator.CONSISTENCY_ORDERING_LIST.contains(CONSISTENCY_TYPE.STRONG) && SafeHomeSimulator.CONSISTENCY_ORDERING_LIST.contains(CONSISTENCY_TYPE.WEAK)) {
+                        double avg = measurementCollector.finalizePrepareStatsAndGetAvg(changingParameterValue, CONSISTENCY_TYPE.WEAK, measurementType);
+                        avg = (double)((int)(avg * 1000.0))/1000.0;
+                        globalDataCollector.get(changingParameterValue).get(measurementType).put(CONSISTENCY_TYPE.WEAK, avg);
+                    }
                 }
                 else
                 {
-                    routineSet = generateAutomatedRtn(RANDOM_SEED);
-                    //System.out.printf("Routines: %s \n", routineSet.toString());
+                    for(CONSISTENCY_TYPE consistency_type :  SafeHomeSimulator.CONSISTENCY_ORDERING_LIST) {
+                        double avg = measurementCollector.finalizePrepareStatsAndGetAvg(changingParameterValue, consistency_type, measurementType);
+                        avg = (double)((int)(avg * 1000.0))/1000.0;
+                        globalDataCollector.get(changingParameterValue).get(measurementType).put(consistency_type, avg);
+                    }
+                }
+            }
+        }
+
+        Map<MEASUREMENT_TYPE, String> perMeasurementAvgMap = new LinkedHashMap<>();
+        String globalResult = printSummary(
+                changingParameterName, changingParameterValue,
+                measurementList, globalDataCollector,
+                perMeasurementAvgMap);
+
+        logStr += globalResult;
+
+        ////////////////////-CREATING-SUBDIRECTORY-/////////////////////////////
+        if(changingParameterName == null) {
+            System.out.println("\n\n ERROR: changingParameterName was not initialized! something is wrong. Terminating...\n\n");
+            System.exit(1);
+        }
+
+
+        String parentDirPath = "";
+
+        if(SysParamSngltn.isGenerateSeparateOutputDir) { // original approach
+            String epoch = System.currentTimeMillis() + "";
+            parentDirPath = dataStorageDirectory + File.separator + epoch + "_VARY_"+ changingParameterName;
+            parentDirPath += "_R_" + maxConcurrentRtn + "_C_" + minCmdCntPerRtn + "-" + maxCmdCntPerRtn;
+        }
+        else
+        { //Rui's version
+            parentDirPath = dataStorageDirectory;
+        }
+
+        File parentDir = new File(parentDirPath);
+        if(!parentDir.exists()) {
+            parentDir.mkdir();
+        }
+
+        String avgMeasurementDirectoryPath = parentDirPath + File.separator + "avg";
+        File avgDir = new File(avgMeasurementDirectoryPath);
+        if(!avgDir.exists()) {
+            avgDir.mkdir();
+        }
+
+        ////////////////////////////////////////////////////////////////
+
+        try
+        {
+            //String fileName = "VARY_" + changingParameterName + ".dat";
+            String fileName = "Overall" + changingParameterName + ".txt";
+            String filePath = parentDirPath + File.separator + fileName;
+
+            Writer fileWriter = new FileWriter(filePath);
+            fileWriter.write(logStr);
+            fileWriter.close();
+
+            for(Map.Entry<MEASUREMENT_TYPE, String> entry : perMeasurementAvgMap.entrySet()) {
+                String measurementFilePath = avgMeasurementDirectoryPath + File.separator + entry.getKey().name() + ".dat";
+
+                fileWriter = new FileWriter(measurementFilePath);
+                fileWriter.write(entry.getValue());
+                fileWriter.close();
+            }
+        }
+        catch (IOException e) {
+            System.out.println(e.toString());
+            e.printStackTrace();
+        }
+
+        System.out.println("\n\nPROCESSING.....");
+        measurementCollector.writeStatsInFile(parentDirPath, changingParameterName,
+                HeaderListSnglTn.getInstance().CONSISTENCY_HEADER,
+                CONSISTENCY_ORDERING_LIST);
+        System.out.println(globalResult);
+
+
+    }
+
+    private static String printSummary(
+            String changingParameterName,
+            Double changingParameterValue,
+            List<MEASUREMENT_TYPE> measurementList,
+            Map<Double, Map<MEASUREMENT_TYPE, Map<CONSISTENCY_TYPE, Double>>> globalDataCollector,
+            Map<MEASUREMENT_TYPE, String> perMeasurementAvgMap) {
+
+        String globalResult = "\n--------------------------------\n";
+        globalResult += "Summary-Start\t\n";
+
+        for (MEASUREMENT_TYPE measurementType : measurementList) {
+            if(measurementType == MEASUREMENT_TYPE.STRETCH_RATIO && !SafeHomeSimulator.CONSISTENCY_ORDERING_LIST.contains(CONSISTENCY_TYPE.EVENTUAL))
+                continue;
+
+            if(measurementType == MEASUREMENT_TYPE.COMPARE_WV_VS_GSV_END_STATE && ( !SafeHomeSimulator.CONSISTENCY_ORDERING_LIST.contains(CONSISTENCY_TYPE.STRONG) || !SafeHomeSimulator.CONSISTENCY_ORDERING_LIST.contains(CONSISTENCY_TYPE.WEAK) )   )
+                continue;
+
+            globalResult += "================================\n";
+            globalResult += "MEASURING: " + measurementType.name() + "\n";
+
+            String perMeasurementInfo = "";
+
+            boolean isHeaderPrinted = false;
+            for(double variable : variableList) {
+                if(!isHeaderPrinted) {
+                    perMeasurementInfo += changingParameterName + "\t";
+                    for(CONSISTENCY_TYPE consistency_type : globalDataCollector.get(variable).get(measurementType).keySet()) {
+                        perMeasurementInfo += HeaderListSnglTn.getInstance().CONSISTENCY_HEADER.get(consistency_type) + "\t";
+                    }
+                    perMeasurementInfo += "\n";
+
+                    isHeaderPrinted = true;
                 }
 
-                Map<DEV_ID, Routine> GSV_devID_lastAccesedRtn_Map = null;
-                Map<DEV_ID, Routine> WV_devID_lastAccesedRtn_Map = null;
+                perMeasurementInfo += variable + "\t";
 
-                for(CONSISTENCY_TYPE consistency_type :  SafeHomeSimulator.CONSISTENCY_ORDERING_LIST)
-                {
-                    ExpResults expResult = runExperiment(devIDlist, consistency_type, routineSet, SIMULATION_START_TIME);
+                for(CONSISTENCY_TYPE consistency_type : globalDataCollector.get(changingParameterValue).get(measurementType).keySet()) {
+                    double avg = globalDataCollector.get(variable).get(measurementType).get(consistency_type);
+                    perMeasurementInfo += avg + "\t";
+                }
+                perMeasurementInfo += "\n";
+            }
+            globalResult += perMeasurementInfo;
+            globalResult += "================================\n";
 
-                    if(measurementList.contains(MEASUREMENT_TYPE.COMPARE_WV_VS_GSV_END_STATE))
-                    {
-                        if(consistency_type == CONSISTENCY_TYPE.WEAK)
-                        {
-                            WV_devID_lastAccesedRtn_Map = expResult.measurement.devID_lastAccesedRtn_Map;
-                        }
-                        else if(consistency_type == CONSISTENCY_TYPE.STRONG)
-                        {
-                            GSV_devID_lastAccesedRtn_Map = expResult.measurement.devID_lastAccesedRtn_Map;
-                        }
-                    }
+            perMeasurementAvgMap.put(measurementType, perMeasurementInfo);
+        }
 
-//                    if (consistency_type == CONSISTENCY_TYPE.EVENTUAL) {
-//                        System.out.printf("Routines for EV: %s \n", routineSet.toString());
-//                    }
+        globalResult += "Summary-End\t\n";
+        globalResult += "--------------------------------\n";
+        return globalResult;
+    }
 
-                    measurementCollector.collectData(changingParameterValue, consistency_type,
-                            MEASUREMENT_TYPE.WAIT_TIME,
-                            expResult.waitTimeHistogram);
+    private static void runAndCollect(
+            String changingParameterName,
+            Double changingParameterValue,
+            List<MEASUREMENT_TYPE> measurementList,
+            MeasurementCollector measurementCollector) throws Exception {
+        List<Routine> routineSet = null;
 
-                    measurementCollector.collectData(changingParameterValue, consistency_type,
-                            MEASUREMENT_TYPE.BACK2BACK_RTN_CMD_EXCTN_TIME,
-                            expResult.back2backRtnExectnTimeHistogram);
+        if(IS_RUNNING_BENCHMARK) {
+            Benchmark benchmarkingTool = new Benchmark(RANDOM_SEED, MINIMUM_CONCURRENCY_LEVEL_FOR_BENCHMARKING);
+            benchmarkingTool.initiateDevices(devIDlist);
+            routineSet = benchmarkingTool.GetOneWorkload();
+            System.out.printf("Routines: %s \n", routineSet.toString());
+            int total_num_command = 0;
+            for (Routine aRoutineSet : routineSet) {
+                total_num_command += aRoutineSet.getNumberofCommand();
+            }
+            System.out.printf("Average number of command: %f \n", total_num_command * 1.0 / routineSet.size());
+        } else {
+            routineSet = generateAutomatedRtn(RANDOM_SEED);
+            //System.out.printf("Routines: %s \n", routineSet.toString());
+        }
 
-                    measurementCollector.collectData(changingParameterValue, consistency_type,
-                            MEASUREMENT_TYPE.E2E_RTN_TIME,
-                            expResult.e2eTimeHistogram);
+        Map<DEV_ID, Routine> GSV_devID_lastAccesedRtn_Map = null;
+        Map<DEV_ID, Routine> WV_devID_lastAccesedRtn_Map = null;
 
-                    measurementCollector.collectData(changingParameterValue, consistency_type,
-                            MEASUREMENT_TYPE.LATENCY_OVERHEAD,
-                            expResult.latencyOverheadHistogram);
+        for(CONSISTENCY_TYPE consistency_type :  SafeHomeSimulator.CONSISTENCY_ORDERING_LIST) {
+            ExpResults expResult = runExperiment(devIDlist, consistency_type, routineSet, SIMULATION_START_TIME);
 
-                    measurementCollector.collectData(changingParameterValue, consistency_type,
-                            MEASUREMENT_TYPE.E2E_VS_WAITTIME,
-                            expResult.e2eVsWaitTimeHistogram);
+            if(measurementList.contains(MEASUREMENT_TYPE.COMPARE_WV_VS_GSV_END_STATE)) {
+                if(consistency_type == CONSISTENCY_TYPE.WEAK) {
+                    WV_devID_lastAccesedRtn_Map = expResult.measurement.devID_lastAccesedRtn_Map;
+                }
+                else if(consistency_type == CONSISTENCY_TYPE.STRONG) {
+                    GSV_devID_lastAccesedRtn_Map = expResult.measurement.devID_lastAccesedRtn_Map;
+                }
+            }
 
-                    measurementCollector.collectData(changingParameterValue,consistency_type,
-                            MEASUREMENT_TYPE.PARALLEL_DELTA,
-                            expResult.measurement.deltaParallelismHistogram);
+            measurementCollector.collectData(changingParameterValue, consistency_type,
+                    MEASUREMENT_TYPE.WAIT_TIME,
+                    expResult.waitTimeHistogram);
 
-                    measurementCollector.collectData(changingParameterValue,consistency_type,
-                            MEASUREMENT_TYPE.PARALLEL_RAW,
-                            expResult.measurement.rawParallelismHistogram);
+            measurementCollector.collectData(changingParameterValue, consistency_type,
+                    MEASUREMENT_TYPE.BACK2BACK_RTN_CMD_EXCTN_TIME,
+                    expResult.back2backRtnExectnTimeHistogram);
 
-                    measurementCollector.collectData(changingParameterValue, consistency_type,
-                            MEASUREMENT_TYPE.ISVLTN5_RTN_LIFESPAN_COLLISION_PERCENT,
-                            expResult.measurement.isvltn5_routineLvlIsolationViolationTimePrcntHistogram);
+            measurementCollector.collectData(changingParameterValue, consistency_type,
+                    MEASUREMENT_TYPE.E2E_RTN_TIME,
+                    expResult.e2eTimeHistogram);
+
+            measurementCollector.collectData(changingParameterValue, consistency_type,
+                    MEASUREMENT_TYPE.LATENCY_OVERHEAD,
+                    expResult.latencyOverheadHistogram);
+
+            measurementCollector.collectData(changingParameterValue, consistency_type,
+                    MEASUREMENT_TYPE.E2E_VS_WAITTIME,
+                    expResult.e2eVsWaitTimeHistogram);
+
+            measurementCollector.collectData(changingParameterValue,consistency_type,
+                    MEASUREMENT_TYPE.PARALLEL_DELTA,
+                    expResult.measurement.deltaParallelismHistogram);
+
+            measurementCollector.collectData(changingParameterValue,consistency_type,
+                    MEASUREMENT_TYPE.PARALLEL_RAW,
+                    expResult.measurement.rawParallelismHistogram);
+
+            measurementCollector.collectData(changingParameterValue, consistency_type,
+                    MEASUREMENT_TYPE.ISVLTN5_RTN_LIFESPAN_COLLISION_PERCENT,
+                    expResult.measurement.isvltn5_routineLvlIsolationViolationTimePrcntHistogram);
 
 //                    measurementCollector.collectData(changingParameterValue, consistency_type,
 //                            MEASUREMENT_TYPE.ISVLTN4_CMD_TO_COMMIT_COLLISION_TIMESPAN_PRCNT,
@@ -537,233 +554,139 @@ public class SafeHomeSimulator
 //                            MEASUREMENT_TYPE.ISVLTN1_PER_RTN_COLLISION_COUNT,
 //                            expResult.measurement.isvltn1_perRtnCollisionCountHistogram);
 
-                    measurementCollector.collectData(changingParameterValue, consistency_type,
-                            MEASUREMENT_TYPE.ORDERR_MISMATCH_BUBBLE,
-                            expResult.measurement.orderingMismatchPrcntBUBBLEHistogram);
+            measurementCollector.collectData(changingParameterValue, consistency_type,
+                    MEASUREMENT_TYPE.ORDERR_MISMATCH_BUBBLE,
+                    expResult.measurement.orderingMismatchPrcntBUBBLEHistogram);
 
-                    measurementCollector.collectData(changingParameterValue, consistency_type,
-                            MEASUREMENT_TYPE.DEVICE_UTILIZATION,
-                            expResult.measurement.devUtilizationPrcntHistogram);
+            measurementCollector.collectData(changingParameterValue, consistency_type,
+                    MEASUREMENT_TYPE.DEVICE_UTILIZATION,
+                    expResult.measurement.devUtilizationPrcntHistogram);
 
-                    if(consistency_type == CONSISTENCY_TYPE.EVENTUAL)
-                    {
-                        measurementCollector.collectData(changingParameterValue, consistency_type,
-                                MEASUREMENT_TYPE.STRETCH_RATIO,
-                                expResult.stretchRatioHistogram);
-                    }
-                }
-
-                if(measurementList.contains(MEASUREMENT_TYPE.COMPARE_WV_VS_GSV_END_STATE))
-                {
-                    if( (WV_devID_lastAccesedRtn_Map != null) && (GSV_devID_lastAccesedRtn_Map != null) )
-                    {
-                        assert(GSV_devID_lastAccesedRtn_Map.size() == WV_devID_lastAccesedRtn_Map.size());
-
-                        float totalDevice = GSV_devID_lastAccesedRtn_Map.size();
-                        float endStateMismatchCount = 0;
-
-                        for(Map.Entry<DEV_ID, Routine> entry : GSV_devID_lastAccesedRtn_Map.entrySet() )
-                        {
-                            DEV_ID device = entry.getKey();
-                            Routine routineGSV = entry.getValue();
-
-                            assert(WV_devID_lastAccesedRtn_Map.containsKey(device));
-
-                            Routine routineWV = WV_devID_lastAccesedRtn_Map.get(device);
-
-                            if(routineWV.ID != routineGSV.ID)
-                            {
-                                endStateMismatchCount++;
-                            }
-                        }
-
-                        float endStateMismatchPercentage = (endStateMismatchCount/totalDevice)*100.0f;
-
-                        Map<Float, Integer> endStateMismatchPercentageHistogram = new HashMap<>();
-                        endStateMismatchPercentageHistogram.put(endStateMismatchPercentage , 1);
-
-                        measurementCollector.collectData(changingParameterValue, CONSISTENCY_TYPE.WEAK,
-                                MEASUREMENT_TYPE.COMPARE_WV_VS_GSV_END_STATE,
-                                endStateMismatchPercentageHistogram);
-                    }
-                }
-            }
-
-            logStr += "\n=========================================================================\n";
-
-
-            if(!globalDataCollector.containsKey(changingParameterValue))
-                globalDataCollector.put(changingParameterValue, new LinkedHashMap<>());
-
-            for(MEASUREMENT_TYPE measurementType : measurementList)
-            {
-                if(!globalDataCollector.get(changingParameterValue).containsKey(measurementType))
-                    globalDataCollector.get(changingParameterValue).put(measurementType, new LinkedHashMap<>());
-
-                if(measurementType == MEASUREMENT_TYPE.STRETCH_RATIO )
-                {
-                    if(SafeHomeSimulator.CONSISTENCY_ORDERING_LIST.contains(CONSISTENCY_TYPE.EVENTUAL))
-                    {
-                        double avg = measurementCollector.finalizePrepareStatsAndGetAvg(changingParameterValue, CONSISTENCY_TYPE.EVENTUAL, measurementType);
-                        avg = (double)((int)(avg * 1000.0))/1000.0;
-                        globalDataCollector.get(changingParameterValue).get(measurementType).put(CONSISTENCY_TYPE.EVENTUAL, avg);
-                    }
-                }
-                else if(measurementType == MEASUREMENT_TYPE.COMPARE_WV_VS_GSV_END_STATE)
-                {
-                    if(SafeHomeSimulator.CONSISTENCY_ORDERING_LIST.contains(CONSISTENCY_TYPE.STRONG) && SafeHomeSimulator.CONSISTENCY_ORDERING_LIST.contains(CONSISTENCY_TYPE.WEAK))
-                    {
-                        double avg = measurementCollector.finalizePrepareStatsAndGetAvg(changingParameterValue, CONSISTENCY_TYPE.WEAK, measurementType);
-                        avg = (double)((int)(avg * 1000.0))/1000.0;
-                        globalDataCollector.get(changingParameterValue).get(measurementType).put(CONSISTENCY_TYPE.WEAK, avg);
-                    }
-                }
-                else
-                {
-                    for(CONSISTENCY_TYPE consistency_type :  SafeHomeSimulator.CONSISTENCY_ORDERING_LIST)
-                    {
-                        double avg = measurementCollector.finalizePrepareStatsAndGetAvg(changingParameterValue, consistency_type, measurementType);
-                        avg = (double)((int)(avg * 1000.0))/1000.0;
-                        globalDataCollector.get(changingParameterValue).get(measurementType).put(consistency_type, avg);
-                    }
-                }
+            if(consistency_type == CONSISTENCY_TYPE.EVENTUAL) {
+                measurementCollector.collectData(changingParameterValue, consistency_type,
+                        MEASUREMENT_TYPE.STRETCH_RATIO,
+                        expResult.stretchRatioHistogram);
             }
         }
 
+        if(measurementList.contains(MEASUREMENT_TYPE.COMPARE_WV_VS_GSV_END_STATE)) {
+            if( (WV_devID_lastAccesedRtn_Map != null) && (GSV_devID_lastAccesedRtn_Map != null) ) {
+                assert(GSV_devID_lastAccesedRtn_Map.size() == WV_devID_lastAccesedRtn_Map.size());
 
-        String globalResult = "\n--------------------------------\n";
-        globalResult += "Summary-Start\t\n";
+                float totalDevice = GSV_devID_lastAccesedRtn_Map.size();
+                float endStateMismatchCount = 0;
 
-        Map<MEASUREMENT_TYPE, String> perMeasurementAvgMap = new LinkedHashMap<>();
+                for(Map.Entry<DEV_ID, Routine> entry : GSV_devID_lastAccesedRtn_Map.entrySet() ) {
+                    DEV_ID device = entry.getKey();
+                    Routine routineGSV = entry.getValue();
 
-        for(MEASUREMENT_TYPE measurementType : measurementList )
-        {
-            if(measurementType == MEASUREMENT_TYPE.STRETCH_RATIO && !SafeHomeSimulator.CONSISTENCY_ORDERING_LIST.contains(CONSISTENCY_TYPE.EVENTUAL))
-                continue;
+                    assert(WV_devID_lastAccesedRtn_Map.containsKey(device));
 
-            if(measurementType == MEASUREMENT_TYPE.COMPARE_WV_VS_GSV_END_STATE && ( !SafeHomeSimulator.CONSISTENCY_ORDERING_LIST.contains(CONSISTENCY_TYPE.STRONG) || !SafeHomeSimulator.CONSISTENCY_ORDERING_LIST.contains(CONSISTENCY_TYPE.WEAK) )   )
-                continue;
+                    Routine routineWV = WV_devID_lastAccesedRtn_Map.get(device);
 
-            globalResult += "================================\n";
-            globalResult += "MEASURING: " + measurementType.name() + "\n";
-
-            String perMeasurementInfo = "";
-
-            boolean isHeaderPrinted = false;
-            for(double variable : variableList)
-            {
-                if(!isHeaderPrinted)
-                {
-                    perMeasurementInfo += changingParameterName + "\t";
-                    for(CONSISTENCY_TYPE consistency_type : globalDataCollector.get(variable).get(measurementType).keySet())
-                    {
-                        perMeasurementInfo += HeaderListSnglTn.getInstance().CONSISTENCY_HEADER.get(consistency_type) + "\t";
+                    if(routineWV.ID != routineGSV.ID) {
+                        endStateMismatchCount++;
                     }
-                    perMeasurementInfo += "\n";
-
-                    isHeaderPrinted = true;
                 }
 
-                perMeasurementInfo += variable + "\t";
+                float endStateMismatchPercentage = (endStateMismatchCount/totalDevice)*100.0f;
 
-                for(CONSISTENCY_TYPE consistency_type : globalDataCollector.get(changingParameterValue).get(measurementType).keySet())
-                {
-                    double avg = globalDataCollector.get(variable).get(measurementType).get(consistency_type);
-                    perMeasurementInfo += avg + "\t";
-                }
+                Map<Float, Integer> endStateMismatchPercentageHistogram = new HashMap<>();
+                endStateMismatchPercentageHistogram.put(endStateMismatchPercentage , 1);
 
-                perMeasurementInfo += "\n";
-            }
-            globalResult += perMeasurementInfo;
-            globalResult += "================================\n";
-
-            perMeasurementAvgMap.put(measurementType, perMeasurementInfo);
-        }
-
-        globalResult += "Summary-End\t\n";
-        globalResult += "--------------------------------\n";
-
-
-        logStr += globalResult;
-
-
-        ////////////////////-CREATING-SUBDIRECTORY-/////////////////////////////
-        if(changingParameterName == null)
-        {
-            System.out.println("\n\n ERROR: changingParameterName was not initialized! something is wrong. Terminating...\n\n");
-            System.exit(1);
-        }
-
-
-        String parentDirPath = "";
-
-        if(SysParamSngltn.isGenerateSeparateOutputDir)
-        { // original approach
-            String epoch = System.currentTimeMillis() + "";
-            parentDirPath = dataStorageDirectory + File.separator + epoch + "_VARY_"+ changingParameterName;
-            parentDirPath += "_R_" + maxConcurrentRtn + "_C_" + minCmdCntPerRtn + "-" + maxCmdCntPerRtn;
-        }
-        else
-        { //Rui's version
-            parentDirPath = dataStorageDirectory;
-        }
-
-        File parentDir = new File(parentDirPath);
-        if(!parentDir.exists())
-        {
-            parentDir.mkdir();
-        }
-
-        String avgMeasurementDirectoryPath = parentDirPath + File.separator + "avg";
-        File avgDir = new File(avgMeasurementDirectoryPath);
-        if(!avgDir.exists())
-        {
-            avgDir.mkdir();
-        }
-
-        ////////////////////////////////////////////////////////////////
-
-        try
-        {
-            //String fileName = "VARY_" + changingParameterName + ".dat";
-            String fileName = "Overall" + changingParameterName + ".txt";
-            String filePath = parentDirPath + File.separator + fileName;
-
-            Writer fileWriter = new FileWriter(filePath);
-            fileWriter.write(logStr);
-            fileWriter.close();
-
-            for(Map.Entry<MEASUREMENT_TYPE, String> entry : perMeasurementAvgMap.entrySet())
-            {
-                String measurementFilePath = avgMeasurementDirectoryPath + File.separator + entry.getKey().name() + ".dat";
-
-                fileWriter = new FileWriter(measurementFilePath);
-                fileWriter.write(entry.getValue());
-                fileWriter.close();
+                measurementCollector.collectData(changingParameterValue, CONSISTENCY_TYPE.WEAK,
+                        MEASUREMENT_TYPE.COMPARE_WV_VS_GSV_END_STATE,
+                        endStateMismatchPercentageHistogram);
             }
         }
-        catch (IOException e)
-        {
-            System.out.println(e.toString());
-            e.printStackTrace();
-        }
-
-        System.out.println("\n\nPROCESSING.....");
-        measurementCollector.writeStatsInFile(parentDirPath, changingParameterName,
-                HeaderListSnglTn.getInstance().CONSISTENCY_HEADER,
-                CONSISTENCY_ORDERING_LIST);
-        System.out.println(globalResult);
-
-
     }
 
-    private static DEV_ID getZipfDistDevID(float randDouble)
-    {
+    private static List<MEASUREMENT_TYPE> getMeasurementList() {
+        List<MEASUREMENT_TYPE> measurementList = new ArrayList<>();
+        if(isSchedulingPoliciesComparison) {
+            // in the config file, set it true only for generating Fig14 data (EUROSYS 2021 submission)
+            CONSISTENCY_ORDERING_LIST.add(CONSISTENCY_TYPE.LAZY_FCFS);
+            CONSISTENCY_ORDERING_LIST.add(CONSISTENCY_TYPE.LAZY_PRIORITY);
+            CONSISTENCY_ORDERING_LIST.add(CONSISTENCY_TYPE.EVENTUAL);
+            measurementList.add(MEASUREMENT_TYPE.E2E_RTN_TIME);
+            measurementList.add(MEASUREMENT_TYPE.PARALLEL_DELTA);
+            measurementList.add(MEASUREMENT_TYPE.ISVLTN5_RTN_LIFESPAN_COLLISION_PERCENT);
+        } else if(isAnalyzingTLunderEV) {
+            CONSISTENCY_ORDERING_LIST.add(CONSISTENCY_TYPE.STRONG); //GSV
+            CONSISTENCY_ORDERING_LIST.add(CONSISTENCY_TYPE.EVENTUAL);
+            measurementList.add(MEASUREMENT_TYPE.E2E_RTN_TIME);
+            measurementList.add(MEASUREMENT_TYPE.ISVLTN5_RTN_LIFESPAN_COLLISION_PERCENT);
+        } else {
+            CONSISTENCY_ORDERING_LIST.add(CONSISTENCY_TYPE.STRONG);
+            CONSISTENCY_ORDERING_LIST.add(CONSISTENCY_TYPE.RELAXED_STRONG);
+            CONSISTENCY_ORDERING_LIST.add(CONSISTENCY_TYPE.EVENTUAL);
+            CONSISTENCY_ORDERING_LIST.add(CONSISTENCY_TYPE.WEAK);
+            CONSISTENCY_ORDERING_LIST.add(CONSISTENCY_TYPE.LAZY_FCFS);
+            CONSISTENCY_ORDERING_LIST.add(CONSISTENCY_TYPE.LAZY_PRIORITY);
+            measurementList.add(MEASUREMENT_TYPE.WAIT_TIME);
+            measurementList.add(MEASUREMENT_TYPE.BACK2BACK_RTN_CMD_EXCTN_TIME);
+            measurementList.add(MEASUREMENT_TYPE.E2E_RTN_TIME);
+            measurementList.add(MEASUREMENT_TYPE.LATENCY_OVERHEAD);
+            measurementList.add(MEASUREMENT_TYPE.E2E_VS_WAITTIME);
+            measurementList.add(MEASUREMENT_TYPE.STRETCH_RATIO);
+            measurementList.add(MEASUREMENT_TYPE.PARALLEL_DELTA);
+            measurementList.add(MEASUREMENT_TYPE.PARALLEL_RAW);
+            measurementList.add(MEASUREMENT_TYPE.ORDERR_MISMATCH_BUBBLE);
+            measurementList.add(MEASUREMENT_TYPE.DEVICE_UTILIZATION);
+//          measurementList.add(MEASUREMENT_TYPE.ISVLTN1_PER_RTN_COLLISION_COUNT);
+//          measurementList.add(MEASUREMENT_TYPE.ISVLTN2_VIOLATED_RTN_PRCNT);
+//          measurementList.add(MEASUREMENT_TYPE.ISVLTN3_CMD_VIOLATION_PRCNT_PER_RTN);
+//          measurementList.add(MEASUREMENT_TYPE.ISVLTN4_CMD_TO_COMMIT_COLLISION_TIMESPAN_PRCNT);
+            measurementList.add(MEASUREMENT_TYPE.ISVLTN5_RTN_LIFESPAN_COLLISION_PERCENT);
+            measurementList.add(MEASUREMENT_TYPE.COMPARE_WV_VS_GSV_END_STATE);
+        }
+        return measurementList;
+    }
+
+    private static String setChangingParameterName(int varIdx) {
+        Double changingParameterValue = variableList.get(varIdx);
+        if(isVaryShrinkFactor) {
+            shrinkFactor = changingParameterValue;
+            return "shrinkFactor";
+        } else if(isVaryZipfAlpha) {
+            zipF = changingParameterValue;
+            return "zipF";
+        } else if(isVaryLongRunningPercent) {
+            longRrtnPcntg = changingParameterValue;
+            return "longRrtnPcntg";
+        } else if(isVaryCommandCntPerRtn) {
+            double maxVal = variableCorrespndinMaxValList.get(varIdx);
+            minCmdCntPerRtn = changingParameterValue;
+            maxCmdCntPerRtn = maxVal;
+            return "minCmdCntPerRtn";
+        } else if(isVaryLongRunningDuration) {
+            double maxVal = variableCorrespndinMaxValList.get(varIdx);
+            minLngRnCmdTimSpn = changingParameterValue;
+            maxLngRnCmdTimSpn = maxVal;
+            return "minLngRnCmdTimSpn";
+        } else if(isVaryShortRunningDuration) {
+            double maxVal = variableCorrespndinMaxValList.get(varIdx);
+            minShrtCmdTimeSpn = changingParameterValue;
+            maxShrtCmdTimeSpn = maxVal;
+            return "minShrtCmdTimeSpn";
+        } else if (isVaryMustCmdPercentage) {
+            mustCmdPercentage = changingParameterValue;
+            return "mustPrcnt";
+        } else if(isVaryDevFailureRatio) {
+            devFailureRatio = changingParameterValue;
+            return "DevFailPrcnt";
+        } else {
+            System.out.println("Error: unknown selection.... Terminating...");
+            System.exit(1);
+        }
+        return "InvalidChangingParam";
+    }
+
+    private static DEV_ID getZipfDistDevID(float randDouble) {
         assert(0 < devID_ProbBoundaryMap.size());
         assert(0.0f <= randDouble && randDouble <= 1.0f);
 
-        for(Map.Entry<DEV_ID, ZipfProbBoundary> entry : devID_ProbBoundaryMap.entrySet())
-        {
+        for(Map.Entry<DEV_ID, ZipfProbBoundary> entry : devID_ProbBoundaryMap.entrySet()) {
             if(entry.getValue().isInsideBoundary(randDouble))
                 return entry.getKey();
         }
@@ -772,8 +695,7 @@ public class SafeHomeSimulator
         return null; // key not found in map... something is wrong;
     }
 
-    private static String prepareZipfian()
-    {
+    private static String prepareZipfian() {
         assert(0 < devIDlist.size());
 
         int numberOfElements = devIDlist.size();
@@ -782,8 +704,7 @@ public class SafeHomeSimulator
 
         List<Float> cumulativeProbabilityList = new ArrayList<>();
 
-        for(int I = 0 ; I < devIDlist.size() ; I++)
-        {
+        for(int I = 0 ; I < devIDlist.size() ; I++) {
             float probability = (float)zipf.probability(I + 1);
 
             if(I == 0)
@@ -796,8 +717,7 @@ public class SafeHomeSimulator
 
         float lowerInclusive = 0.0f;
 
-        for(int I = 0 ; I < devIDlist.size() ; I++)
-        {
+        for(int I = 0 ; I < devIDlist.size() ; I++) {
             float upperExclusive = cumulativeProbabilityList.get(I);
 
             if(I == devIDlist.size() - 1)
@@ -817,8 +737,7 @@ public class SafeHomeSimulator
         Map<DEV_ID, Integer> histogram = new HashMap<>();
 
         Double sampleSize = 1000000.0;
-        for(int I = 0 ; I < sampleSize ; I++)
-        {
+        for(int I = 0 ; I < sampleSize ; I++) {
             DEV_ID devId = getZipfDistDevID(rand.nextFloat());
             if(!histogram.containsKey(devId))
                 histogram.put(devId, 0);
@@ -828,35 +747,28 @@ public class SafeHomeSimulator
 
         String str = "";
 
-        for(DEV_ID devId: devIDlist)
-        {
-            if(histogram.containsKey(devId))
-            {
+        for(DEV_ID devId: devIDlist) {
+            if(histogram.containsKey(devId)) {
                 Double percentage = (histogram.get(devId) / sampleSize) * 100.0;
                 String formattedStr = String.format("%s -> selection probability = %.2f%%", devId.name(), percentage);
                 str += formattedStr + "\n";
             }
 
         }
-
         return str;
     }
 
 
     private static int ROUTINE_ID = 0;
 
-    public static int getUniqueRtnID()
-    {
+    public static int getUniqueRtnID() {
         return SafeHomeSimulator.ROUTINE_ID++;
     }
 
-    private static List<Routine> generateAutomatedRtn(int nonNegativeSeed)
-    {
+    private static List<Routine> generateAutomatedRtn(int nonNegativeSeed) {
         if(maxCmdCntPerRtn < minCmdCntPerRtn ||
                 maxLngRnCmdTimSpn < minLngRnCmdTimSpn ||
-                maxShrtCmdTimeSpn < minShrtCmdTimeSpn
-        )
-        {
+                maxShrtCmdTimeSpn < minShrtCmdTimeSpn) {
             System.out.println("\n ERROR: maxCmdCntPerRtn = " + maxCmdCntPerRtn + ", minCmdCntPerRtn = " + minCmdCntPerRtn);
             System.out.println("\n ERROR: maxLngRnCmdTimSpn = " + maxLngRnCmdTimSpn + ", minLngRnCmdTimSpn = " + minLngRnCmdTimSpn);
             System.out.println("\n ERROR: maxShrtCmdTimeSpn = " + maxShrtCmdTimeSpn + ", minShrtCmdTimeSpn = " + minShrtCmdTimeSpn + "\n Terminating.....");
@@ -875,8 +787,7 @@ public class SafeHomeSimulator
 
         int longRunningRoutineCount = 0;
 
-        for(int RoutineCount = 0 ; RoutineCount < totalConcurrentRtn ; ++RoutineCount)
-        {
+        for(int RoutineCount = 0 ; RoutineCount < totalConcurrentRtn ; ++RoutineCount) {
             float nextDbl = rand.nextFloat();
             nextDbl = (nextDbl == 1.0f) ? nextDbl - 0.001f : nextDbl;
             boolean isLongRunning = (nextDbl < longRrtnPcntg);
@@ -884,8 +795,7 @@ public class SafeHomeSimulator
             if(isLongRunning)
                 longRunningRoutineCount++;
 
-            if(isAtleastOneLongRunning && (RoutineCount == totalConcurrentRtn - 1) && longRunningRoutineCount == 0)
-            {
+            if(isAtleastOneLongRunning && (RoutineCount == totalConcurrentRtn - 1) && longRunningRoutineCount == 0) {
                 isLongRunning = true; // at least one routine will be long running;
             }
 
@@ -893,9 +803,7 @@ public class SafeHomeSimulator
             int difference = 1 + (int)maxCmdCntPerRtn - (int)minCmdCntPerRtn;
             int totalCommandInThisRtn = (int)minCmdCntPerRtn + rand.nextInt(difference);
 
-
-            if(devIDlist.size() < totalCommandInThisRtn )
-            {
+            if(devIDlist.size() < totalCommandInThisRtn ) {
                 System.out.println("\n ERROR: ID 2z3A9s : totalCommandInThisRtn = " + totalCommandInThisRtn + " > devIDlist.size() = " + devIDlist.size());
                 System.exit(1);
             }
@@ -903,8 +811,7 @@ public class SafeHomeSimulator
             Map<DEV_ID, Integer> devIDDurationMap = new HashMap<>();
             List<DEV_ID> devList = new ArrayList<>();
 
-            while(devIDDurationMap.size() < totalCommandInThisRtn)
-            {
+            while(devIDDurationMap.size() < totalCommandInThisRtn) {
                 DEV_ID devID;
 
                 devID = getZipfDistDevID(rand.nextFloat());
@@ -915,8 +822,7 @@ public class SafeHomeSimulator
                 int duration;
                 int currentDurationMapSize = devIDDurationMap.size();
                 int middleCommandIndex = totalCommandInThisRtn / 2;
-                if(isLongRunning && ( currentDurationMapSize == middleCommandIndex) )
-                { // select the  middle command as long running command
+                if(isLongRunning && ( currentDurationMapSize == middleCommandIndex) ) { // select the  middle command as long running command
                     difference = 1 + (int)maxLngRnCmdTimSpn - (int)minLngRnCmdTimSpn;
                     duration = (int)minLngRnCmdTimSpn + rand.nextInt(difference);
                 }
@@ -932,8 +838,7 @@ public class SafeHomeSimulator
 
             Routine rtn = new Routine();
 
-            for(DEV_ID devID : devList)
-            {
+            for(DEV_ID devID : devList) {
                 assert(devIDDurationMap.containsKey(devID));
 
                 nextDbl = rand.nextFloat();
@@ -947,18 +852,13 @@ public class SafeHomeSimulator
 
         Collections.shuffle(routineList, rand);
 
-        if(shrinkFactor == 0.0)
-        {
-            for(int index = 0 ; index < routineList.size() ; ++index)
-            {
+        if(shrinkFactor == 0.0) {
+            for(int index = 0 ; index < routineList.size() ; ++index) {
                 routineList.get(index).registrationTime = SIMULATION_START_TIME;
             }
-        }
-        else
-        {
+        } else {
             float allRtnBackToBackExcTime = 0.0f;
-            for(Routine rtn : routineList)
-            {
+            for(Routine rtn : routineList) {
                 allRtnBackToBackExcTime += rtn.getBackToBackCmdExecutionTimeWithoutGap();
             }
 
@@ -967,22 +867,19 @@ public class SafeHomeSimulator
             int upperLimit = (int)Math.ceil(simulationLastRtnStartTime);
 
             List<Integer> randStartPointList = new ArrayList<>();
-            for(int I = 0 ; I < routineList.size() ; I++)
-            {
+            for(int I = 0 ; I < routineList.size() ; I++) {
                 int randStartPoint = SIMULATION_START_TIME +  ((upperLimit == 0) ? 0 : rand.nextInt(upperLimit));
                 randStartPointList.add(randStartPoint);
             }
 
             Collections.sort(randStartPointList);
 
-            for(int I = 0 ; I < routineList.size() ; I++)
-            {
+            for(int I = 0 ; I < routineList.size() ; I++) {
                 routineList.get(I).registrationTime = randStartPointList.get(I);
             }
         }
 
-        for(int index = 0 ; index < routineList.size() ; ++index)
-        {
+        for(int index = 0 ; index < routineList.size() ; ++index) {
             routineList.get(index).ID = getUniqueRtnID();
         }
 
@@ -991,32 +888,31 @@ public class SafeHomeSimulator
     }
 
 
-    private static String printInitialRoutineList(List<Routine> routineList)
-    {
+    private static String printInitialRoutineList(List<Routine> routineList) {
         String logStr = "";
-        for(Routine rtn : routineList)
-        {
+        for(Routine rtn : routineList) {
             System.out.println("# " + rtn);
             logStr += "#" + rtn + "\n";
         }
         return logStr;
     }
 
-    public static ExpResults runExperiment(List<DEV_ID> _devIDlist, CONSISTENCY_TYPE _consistencyType, final List<Routine> _originalRtnList, int _simulationStartTime)
-    {
-        LockTable lockTable = new LockTable(_devIDlist, _consistencyType);
+    public static ExpResults runExperiment(
+            List<DEV_ID> _devIDlist,
+            CONSISTENCY_TYPE _consistencyType,
+            final List<Routine> _originalRtnList,
+            int _simulationStartTime) {
 
+        LockTable lockTable = new LockTable(_devIDlist, _consistencyType);
         List<Routine> perExpRtnList = new ArrayList<>();
-        for(Routine originalRtn: _originalRtnList)
-        {
+        for(Routine originalRtn: _originalRtnList) {
             perExpRtnList.add(originalRtn.getDeepCopy());
         }
 
 
         lockTable.register(perExpRtnList, _simulationStartTime);
 
-//        if(_consistencyType == CONSISTENCY_TYPE.EVENTUAL)
-//        {
+//        if(_consistencyType == CONSISTENCY_TYPE.EVENTUAL) {
 //            System.out.println(lockTable);
 //            System.out.println("Lock table printed... Terminating program....");
 //            System.exit(1);
@@ -1030,8 +926,7 @@ public class SafeHomeSimulator
         expResults.measurement = new Measurement(lockTable);
 
 
-        for(Routine routine : perExpRtnList)
-        {
+        for(Routine routine : perExpRtnList) {
             float data;
             Integer count;
 
