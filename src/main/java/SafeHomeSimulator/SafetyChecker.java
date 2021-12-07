@@ -4,14 +4,55 @@ import java.util.*;
 
 public class SafetyChecker {
 
-    public void staticCheck() {
+    private final List<ActionConditionTuple> _rules;
+    private final HashMap<DevNameDevStatusTuple, List<DevNameDevStatusTuple>> conditionVsRequiredActionsMap;
+    private final HashMap<String, HashMap<DEV_STATE, List<DevNameDevStatusTuple>>> actionVsRelatedConditionsMap;
 
+    public SafetyChecker(List<ActionConditionTuple> safetyRules) {
+        _rules = new ArrayList<>(safetyRules);
+        conditionVsRequiredActionsMap = new HashMap<>();
+        actionVsRelatedConditionsMap = new HashMap<>();
     }
-    private boolean validateSingleSafetyRules(
-            DevNameDevStatusTuple condition, DevNameDevStatusTuple action,
-            HashMap<DevNameDevStatusTuple, List<DevNameDevStatusTuple>> conditionVsRequiredActionsMap,
-            HashMap<String, HashMap<DEV_STATE, List<DevNameDevStatusTuple>>> actionVsRelatedConditionsMap) {
+    
+    /** This function will clear existing registered safety rules. */
+    public boolean registerAndValidateRules() {
+        conditionVsRequiredActionsMap.clear();
+        actionVsRelatedConditionsMap.clear();
 
+        boolean valid = true;
+        for(ActionConditionTuple actionConditionTuple : _rules) {
+            DevNameDevStatusTuple condition = actionConditionTuple.getCondition();
+            DevNameDevStatusTuple action = actionConditionTuple.getAction();
+
+            System.out.println("Validating rules: if " + condition.toString() + " then " +  action.toString());
+
+            if (!conditionVsRequiredActionsMap.isEmpty()) {
+                valid &= validateSingleSafetyRules(condition, action);
+            }
+
+            // Update condition -> List<action> map
+            if(!conditionVsRequiredActionsMap.containsKey(condition)) {
+                conditionVsRequiredActionsMap.put(condition, new ArrayList<>());
+            }
+            conditionVsRequiredActionsMap.get(condition).add(action);
+
+            // Update action -> List<condition> map
+            String act_dev_name = action.getDevId().name();
+            DEV_STATE act_dev_stat = action.getDevStatus();
+            if (!actionVsRelatedConditionsMap.containsKey(act_dev_name)) {
+                actionVsRelatedConditionsMap.put(act_dev_name, new HashMap<>());
+                actionVsRelatedConditionsMap.get(act_dev_name).put(act_dev_stat, new ArrayList<>());
+            } else if (!actionVsRelatedConditionsMap.get(act_dev_name).containsKey(act_dev_stat)) {
+                actionVsRelatedConditionsMap.get(act_dev_name).put(act_dev_stat, new ArrayList<>());
+            }
+
+            actionVsRelatedConditionsMap.get(act_dev_name).get(act_dev_stat).add(condition);
+        }
+        return valid;
+    }
+
+    /** Static checking among safety rules only. */
+    private boolean validateSingleSafetyRules(DevNameDevStatusTuple condition, DevNameDevStatusTuple action) {
         /* Starting validating conflict rules. Below is supposed to be part of static checking in high-level design.*/
         // Category 1: Each condition could only ``enforce'' at most one condition of each device. TODO: any exception?
         //             If Multiple, only keep the first one.
@@ -31,7 +72,6 @@ public class SafetyChecker {
 
         // Category 2: The condition sets of two different states of the same dev should always be the same.
         //             If violated, send out notification. (maybe remove the later one?)
-
         final DEV_ID act_dev_name = action.getDevId();
         final DEV_STATE act_dev_stat = action.getDevStatus();
 

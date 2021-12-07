@@ -30,7 +30,6 @@ import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.Writer;
-import java.util.*;
 
 
 // graph plotting tool command:  "python .\gen_all.py -d C:\Users\shegufta\Desktop\smartHomeData\1568337471715_VARY_maxConcurrentRtn_R_101_C_6"
@@ -61,7 +60,8 @@ public class SimulateFailure
 
     private static double zipF = SysParamSngltn.getInstance().zipF; //  0.01;
     public static int devRegisteredOutOf65Dev = SysParamSngltn.getInstance().devRegisteredOutOf65Dev;
-    private static double devStateNumber = SysParamSngltn.getInstance().devStateNumber; // 2
+    private static double numDevState = SysParamSngltn.getInstance().numDevState; // 2
+    private static int numSafetyRules = SysParamSngltn.getInstance().numSafetyRule; // 10
     private static int maxConcurrentRtn = SysParamSngltn.getInstance().maxConcurrentRtn; //  100; //in current version totalConcurrentRtn = maxConcurrentRtn;
 
     private static double longRrtnPcntg = SysParamSngltn.getInstance().longRrtnPcntg; //  0.1;

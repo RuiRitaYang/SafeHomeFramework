@@ -22,6 +22,7 @@ package SafeHomeSimulator;
 
 import BenchmarkingTool.*;
 import org.apache.commons.math3.distribution.ZipfDistribution;
+import org.apache.commons.math3.genetics.RandomKeyMutation;
 
 import java.io.File;
 import java.io.FileWriter;
@@ -58,7 +59,8 @@ public class SafeHomeSimulator
 
     private static double zipF = SysParamSngltn.getInstance().zipF; //  0.01;
     public static int devRegisteredOutOf65Dev = SysParamSngltn.getInstance().devRegisteredOutOf65Dev;
-    private static int devStateNumber = SysParamSngltn.getInstance().devStateNumber;
+    private static int numDevState = SysParamSngltn.getInstance().numDevState; // 2
+    private static int numSafetyRule = SysParamSngltn.getInstance().numSafetyRule; // 10
     private static int maxConcurrentRtn = SysParamSngltn.getInstance().maxConcurrentRtn; //  100; //in current version totalConcurrentRtn = maxConcurrentRtn;
 
     private static double longRrtnPcntg = SysParamSngltn.getInstance().longRrtnPcntg; //  0.1;
@@ -80,6 +82,7 @@ public class SafeHomeSimulator
     private static final int SIMULATION_START_TIME = SysParamSngltn.getInstance().SIMULATION_START_TIME; //  0;
     public static final int MAX_DATAPOINT_COLLECTON_SIZE = SysParamSngltn.getInstance().MAX_DATAPOINT_COLLECTON_SIZE; //  5000;
     private static final int RANDOM_SEED = SysParamSngltn.getInstance().RANDOM_SEED; //  -1;
+    private static final Random rand = RANDOM_SEED > 0 ? new Random(RANDOM_SEED) : new Random();
     private static final int MINIMUM_CONCURRENCY_LEVEL_FOR_BENCHMARKING = SysParamSngltn.getInstance().MINIMUM_CONCURRENCY_LEVEL_FOR_BENCHMARKING; //  5;
 
     private static final String dataStorageDirectory = SysParamSngltn.getInstance().dataStorageDirectory; //  "C:\\Users\\shegufta\\Desktop\\smartHomeData";
@@ -475,10 +478,12 @@ public class SafeHomeSimulator
             List<MEASUREMENT_TYPE> measurementList,
             MeasurementCollector measurementCollector) throws Exception {
         List<Routine> routineSet = null;
+        List<ActionConditionTuple> safetyRules = null;
 
         if (IS_RUNNING_BENCHMARK) {
             Benchmark benchmarkingTool = new Benchmark(RANDOM_SEED, MINIMUM_CONCURRENCY_LEVEL_FOR_BENCHMARKING);
             benchmarkingTool.initiateDevices(devIDlist);
+            // Get routines.
             routineSet = benchmarkingTool.GetOneWorkload();
             System.out.printf("Routines: %s \n", routineSet.toString());
             int total_num_command = 0;
@@ -486,9 +491,26 @@ public class SafeHomeSimulator
                 total_num_command += aRoutineSet.getNumberofCommand();
             }
             System.out.printf("Average number of command: %f \n", total_num_command * 1.0 / routineSet.size());
+            // Get and register safety rules.
+            safetyRules = generateSafetyRules();
+            SafetyChecker safetyChecker = new SafetyChecker(safetyRules);
+            if (!safetyChecker.registerAndValidateRules()) {
+                System.out.println("Invalid Safety rule set for benchmark!");
+            }
+            System.exit(0);
+
         } else {
-            routineSet = generateAutomatedRtn(RANDOM_SEED);
+            routineSet = generateAutomatedRtn();
             //System.out.printf("Routines: %s \n", routineSet.toString());
+            boolean valid = false;
+            while (!valid) {
+                safetyRules = generateSafetyRules();
+                SafetyChecker safetyChecker = new SafetyChecker(safetyRules);
+                valid = safetyChecker.registerAndValidateRules();
+                if (!valid) {
+                    System.out.println("Invalid Safety rule set!");
+                }
+            }
         }
 
         Map<DEV_ID, Routine> GSV_devID_lastAccesedRtn_Map = null;
@@ -731,9 +753,6 @@ public class SafeHomeSimulator
             lowerInclusive = cumulativeProbabilityList.get(I);
         }
 
-
-        Random rand = new Random();
-
         Map<DEV_ID, Integer> histogram = new HashMap<>();
 
         Double sampleSize = 1000000.0;
@@ -765,7 +784,11 @@ public class SafeHomeSimulator
         return SafeHomeSimulator.ROUTINE_ID++;
     }
 
-    private static List<Routine> generateAutomatedRtn(int nonNegativeSeed) {
+    private static DEV_STATE getRandomDevState() {
+        return DEV_STATE.values()[rand.nextInt(numDevState)];
+    }
+
+    private static List<Routine> generateAutomatedRtn() {
         if (maxCmdCntPerRtn < minCmdCntPerRtn ||
                 maxLngRnCmdTimSpn < minLngRnCmdTimSpn ||
                 maxShrtCmdTimeSpn < minShrtCmdTimeSpn) {
@@ -776,12 +799,6 @@ public class SafeHomeSimulator
         }
 
         List<Routine> routineList = new ArrayList<>();
-        Random rand;
-
-        if (0 <= nonNegativeSeed)
-            rand = new Random(nonNegativeSeed);
-        else
-            rand = new Random();
 
         int totalConcurrentRtn = maxConcurrentRtn;
 
@@ -842,7 +859,7 @@ public class SafeHomeSimulator
                 nextDbl = rand.nextFloat();
                 nextDbl = (nextDbl == 1.0f) ? nextDbl - 0.001f : nextDbl;
                 boolean isMust = (nextDbl < mustCmdPercentage);
-                DEV_STATE dev_state = DEV_STATE.values()[rand.nextInt(devStateNumber)];
+                DEV_STATE dev_state = getRandomDevState();
                 Command cmd = new Command(devID,dev_state, devIDDurationMap.get(devID), isMust, mustCmdPercentage);
                 rtn.addCommand(cmd);
             }
@@ -886,6 +903,19 @@ public class SafeHomeSimulator
         return routineList;
     }
 
+    private static List<ActionConditionTuple> generateSafetyRules() {
+        List<ActionConditionTuple> rules = new ArrayList<>();
+        for (int i = 0; i < numSafetyRule; ++i) {
+            ActionConditionTuple rule = new ActionConditionTuple(
+                    getZipfDistDevID(rand.nextFloat()), // actionDevID
+                    getRandomDevState(),
+                    getZipfDistDevID(rand.nextFloat()), // conditionID
+                    getRandomDevState()
+            );
+            rules.add(rule);
+        }
+        return rules;
+    }
 
     private static String printInitialRoutineList(List<Routine> routineList) {
         String logStr = "";

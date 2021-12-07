@@ -37,5 +37,6 @@ public enum DEV_STATE {
   STATE8,
   STATE9,
   UNKNOWN,
-  email
+  email,
+  REMOVED
 }
