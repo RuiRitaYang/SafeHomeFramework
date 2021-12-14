@@ -7,13 +7,15 @@ public class SafetyChecker {
     private final List<ActionConditionTuple> _rules;
     private final HashMap<DevNameDevStatusTuple, List<DevNameDevStatusTuple>> conditionVsRequiredActionsMap;
     private final HashMap<String, HashMap<DEV_STATE, List<DevNameDevStatusTuple>>> actionVsRelatedConditionsMap;
+    public final Map<DEV_ID, DEV_STATE> allDevStatus;
 
     public SafetyChecker(List<ActionConditionTuple> safetyRules) {
         _rules = new ArrayList<>(safetyRules);
         conditionVsRequiredActionsMap = new HashMap<>();
         actionVsRelatedConditionsMap = new HashMap<>();
+        allDevStatus = new HashMap<>();
     }
-    
+
     /** This function will clear existing registered safety rules. */
     public boolean registerAndValidateRules() {
         conditionVsRequiredActionsMap.clear();
@@ -51,7 +53,7 @@ public class SafetyChecker {
         return valid;
     }
 
-    /** Static checking among safety rules only. */
+    /** Static checking among safety rules only */
     private boolean validateSingleSafetyRules(DevNameDevStatusTuple condition, DevNameDevStatusTuple action) {
         /* Starting validating conflict rules. Below is supposed to be part of static checking in high-level design.*/
         // Category 1: Each condition could only ``enforce'' at most one condition of each device. TODO: any exception?
@@ -103,7 +105,7 @@ public class SafetyChecker {
 
         return true;
     }
-    
+
     private List<DEV_ID> getLargestDevSetForOneActionDev(Map<DEV_STATE, List<DEV_ID>> dev_set) {
         List<DEV_ID> res = new ArrayList<>();
         int max_size = 0;
@@ -219,5 +221,103 @@ public class SafetyChecker {
             }
         }
         return res;
+    }
+
+    private boolean checkOneDevState(final DevNameDevStatusTuple target_dev_stat) {
+        // With is_safe flag, could print out all violated rules.
+        boolean is_safe = true;
+        for (final DevNameDevStatusTuple condition: conditionVsRequiredActionsMap.keySet()){
+            if (!target_dev_stat.equals(condition)) { continue; }
+            // Get the expected device states for under that safety rule.
+            for (final DevNameDevStatusTuple expected_devstate: conditionVsRequiredActionsMap.get(condition)) {
+                // Compare each expected device state with running state (per-routine level)
+                if (!allDevStatus.get(expected_devstate.getDevId()).equals(expected_devstate.getDevStatus())) {
+                    System.out.println("DYNAMIC SAFE CHECKER -- Not safe for DEVICE " + target_dev_stat.getDevId() +
+                            " to STATUS " + target_dev_stat.getDevStatus().toString() + " cauz DEVICE " +
+                            expected_devstate.getDevId() + " is STATUS " +
+                            allDevStatus.get(expected_devstate.getDevId()) + " instead of " +
+                            expected_devstate.getDevStatus());
+                    is_safe = false;
+                }
+            }
+        }
+        return is_safe;
+    }
+
+    /**
+     *
+     * @return Return all the influenced dev states of a specific device state
+     */
+    public Map<DEV_ID, DEV_STATE> getConditionsOfOneDevStat(DevNameDevStatusTuple dev_stat) {
+        Map<DEV_ID, DEV_STATE> condition_list = new HashMap<>();
+        for (Map.Entry<DevNameDevStatusTuple, List<DevNameDevStatusTuple>> single_rule:
+                conditionVsRequiredActionsMap.entrySet()) {
+            if (single_rule.getValue().contains(dev_stat)) {
+                condition_list.put(single_rule.getKey().getDevId(), single_rule.getKey().getDevStatus());
+            }
+        }
+        return condition_list;
+    }
+
+    public void checkOnDeviceStateChange(Map<DEV_ID, DEV_STATE> _devNameStatusMap) {
+        // TODO(@ry): Ongoing
+        System.out.println("\n@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@");
+        System.out.println("@ DEVICE STATUS CHANGED....");
+        Map<DEV_ID, DEV_STATE> pre_stats = new HashMap<>();
+        for(final Map.Entry<DEV_ID, DEV_STATE> entry : _devNameStatusMap.entrySet())
+        {
+            DEV_ID dev_id = entry.getKey();
+            DEV_STATE currentStatus = entry.getValue();
+
+            if(currentStatus == DEV_STATE.REMOVED) {
+                this.allDevStatus.remove(dev_id);
+                System.out.println("\t < deviceName " + dev_id + " : removed >");
+            }
+            else
+            {
+                DEV_STATE previousStatus = this.allDevStatus.getOrDefault(dev_id, DEV_STATE.UNKNOWN);
+                this.allDevStatus.put(dev_id, currentStatus);
+                pre_stats.put(dev_id, previousStatus);
+                System.out.println("\t< deviceName: "+ dev_id + " | previousStatus = " + previousStatus + " | currentStatus " + currentStatus + " >");
+            }
+        }
+
+        // Check whether new change violates safety rules
+        // (Needs to be done here, because there might be multiple changes in this function here with no order showing)
+        for (final Map.Entry<DEV_ID, DEV_STATE> new_dev_stat: _devNameStatusMap.entrySet()) {
+            DEV_ID dev = new_dev_stat.getKey();
+            System.out.println("DYNAMIC_CHECKING: checking for DEVICE " + dev + " with STATUS " + new_dev_stat.getValue().toString());
+            if (!checkOneDevState(new DevNameDevStatusTuple(dev, new_dev_stat.getValue()))) {
+                System.out.println("Check Failed!!!!!!!!\n");
+                // TODO: If this is triggered by failure, do we really have someway to handle besides notification?!
+            }
+
+            // Get the dev_stats that is influenced by the state change (the conditions e.g. oven is on).
+            Map<DEV_ID, DEV_STATE> effected_dev_stats =
+                    getConditionsOfOneDevStat(new DevNameDevStatusTuple(dev, pre_stats.get(dev)));
+
+            // if any running dev_state matches the effected_dev_stats, such devs need to be changed (turn off for now).
+            for (Map.Entry<DEV_ID, DEV_STATE> e_dev_state: effected_dev_stats.entrySet()) {
+                DEV_ID dev_id = e_dev_state.getKey();
+                System.out.println("DYNAMIC_CHECKING: checking condition for DEVICE " + dev_id + " avoiding STATE " +
+                        e_dev_state.getValue().toString() + " with ACTUAL STATE " + this.allDevStatus.get(dev_id));
+                if (e_dev_state.getValue().equals(this.allDevStatus.get(dev_id))) {
+                    System.out.println("Violation detected for DEVICE " + dev_id +
+                            " with STATUS " + e_dev_state.getValue().toString());
+                    // TODO: better decision if violated. (e.g. what if the status of behavior is OFF)
+                    // Shut down the device.
+                    Command cmd = new Command(dev_id, DEV_STATE.OFF, 0, true, 1.0);
+                    Routine shut_down_routine = new Routine("shut_down_by_safety_checker");
+                    shut_down_routine.addCommand(cmd);
+                    System.out.println("Shut down routine: " + shut_down_routine);
+                    // TODO: Need to update the rollback scheme here.
+                    //       If set to null, will lead to null pointer failure in safety checker
+                    // TODO: add to lock table
+                }
+            }
+
+        }
+
+        System.out.println("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@\n");
     }
 }
